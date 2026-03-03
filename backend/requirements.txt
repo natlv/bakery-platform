@@ -1,0 +1,6 @@
+fastapi
+uvicorn
+psycopg2-binary
+python-dotenv
+google-cloud-storage
+git+https://github.com/iambcl/cs5224-gcs-bucket-utils.git
