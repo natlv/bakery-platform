@@ -1,8 +1,12 @@
 from fastapi import FastAPI, UploadFile, File, Form
+from dotenv import load_dotenv
 import shutil
 import os
 from bucket_utils import Bucket
 from db import cursor, conn
+
+load_dotenv()
+os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
 
 app = FastAPI()
 
