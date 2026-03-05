@@ -3,4 +3,5 @@ uvicorn
 psycopg2-binary
 python-dotenv
 google-cloud-storage
+python-multipart
 git+https://github.com/iambcl/cs5224-gcs-bucket-utils.git
