@@ -11,3 +11,4 @@ wheels/
 backend/.env
 .vscode
 backend/bucket_key.json
+bucket_key.json
