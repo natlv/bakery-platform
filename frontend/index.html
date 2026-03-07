@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html>
+
 <head>
 
 <title>Bakery Marketplace</title>
@@ -12,43 +13,12 @@ background:#f5f5f5;
 margin:40px;
 }
 
-h1{
-text-align:center;
-}
-
-.container{
-display:grid;
-grid-template-columns:1fr 1fr;
-gap:40px;
-}
-
 .card{
 background:white;
 padding:20px;
 border-radius:10px;
 box-shadow:0 2px 10px rgba(0,0,0,0.1);
-}
-
-input,button{
-margin:6px 0;
-padding:8px;
-width:100%;
-}
-
-button{
-background:#ff7b54;
-border:none;
-color:white;
-cursor:pointer;
-}
-
-button:hover{
-background:#ff5e30;
-}
-
-.request{
-border-bottom:1px solid #eee;
-padding:10px 0;
+margin-bottom:20px;
 }
 
 </style>
@@ -57,320 +27,104 @@ padding:10px 0;
 
 <body>
 
-<h1>🍰 Bakery Request Marketplace</h1>
-
-<div class="container">
-
-<!-- CUSTOMER -->
-<div class="card">
-
-<h2>Create Request</h2>
-
-<form id="requestForm">
-
-<input name="customer_id" placeholder="Customer ID" value="1">
-
-<input name="title" placeholder="Title">
-
-<input name="description" placeholder="Description">
-
-<input name="budget" placeholder="Budget">
-
-<input name="deadline" placeholder="Deadline (YYYY-MM-DD)">
-
-<input type="file" name="file">
-
-<button>Create Request</button>
-
-</form>
-
-</div>
-
-
-<!-- BAKER -->
-<div class="card">
-
-<h2>Submit Bid</h2>
-
-<form id="bidForm">
-
-<input name="request_id" placeholder="Request ID">
-
-<input name="baker_id" placeholder="Baker ID" value="1">
-
-<input name="price" placeholder="Price">
-
-<input name="timeline" placeholder="Timeline">
-
-<input name="notes" placeholder="Notes">
-
-<button>Submit Bid</button>
-
-</form>
-
-</div>
-
-</div>
-
-<br><br>
-
-<!-- REQUEST BOARD -->
-
-<div class="card">
-
-<h2>Open Requests</h2>
-
-<button onclick="loadRequests()">Refresh Requests</button>
-
-<div id="requests"></div>
-
-</div>
-
-<br>
-
-<!-- BIDS -->
-
-<div class="card">
-
-<h2>View Bids</h2>
-
-<input id="bidRequestId" placeholder="Request ID">
-
-<button onclick="loadBids()">Load Bids</button>
-
-<div id="bids"></div>
-
-</div>
-
-<!DOCTYPE html>
-<html>
-<head>
-
-<title>Bakery Marketplace</title>
-
-<style>
-
-body{
-font-family: Arial;
-background:#f5f5f5;
-margin:40px;
-}
-
-h1{
-text-align:center;
-}
-
-.container{
-display:grid;
-grid-template-columns:1fr 1fr;
-gap:40px;
-}
-
-.card{
-background:white;
-padding:20px;
-border-radius:10px;
-box-shadow:0 2px 10px rgba(0,0,0,0.1);
-}
-
-input,button{
-margin:6px 0;
-padding:8px;
-width:100%;
-}
-
-button{
-background:#ff7b54;
-border:none;
-color:white;
-cursor:pointer;
-}
-
-button:hover{
-background:#ff5e30;
-}
-
-.request{
-border-bottom:1px solid #eee;
-padding:10px 0;
-}
-
-</style>
-
-</head>
-
-<body>
-
-<h1>🍰 Bakery Request Marketplace</h1>
-
-<div class="container">
-
-<!-- CUSTOMER -->
-<div class="card">
-
-<h2>Create Request</h2>
-
-<form id="requestForm">
-
-<input name="customer_id" placeholder="Customer ID" value="1">
-
-<input name="title" placeholder="Title">
-
-<input name="description" placeholder="Description">
-
-<input name="budget" placeholder="Budget">
-
-<input name="deadline" placeholder="Deadline (YYYY-MM-DD)">
-
-<input type="file" name="file">
-
-<button>Create Request</button>
-
-</form>
-
-</div>
-
-
-<!-- BAKER -->
-<div class="card">
-
-<h2>Submit Bid</h2>
-
-<form id="bidForm">
-
-<input name="request_id" placeholder="Request ID">
-
-<input name="baker_id" placeholder="Baker ID" value="1">
-
-<input name="price" placeholder="Price">
-
-<input name="timeline" placeholder="Timeline">
-
-<input name="notes" placeholder="Notes">
-
-<button>Submit Bid</button>
-
-</form>
-
-</div>
-
-</div>
-
-<br><br>
-
-<!-- REQUEST BOARD -->
-
-<div class="card">
-
-<h2>Open Requests</h2>
-
-<button onclick="loadRequests()">Refresh Requests</button>
-
-<div id="requests"></div>
-
-</div>
-
-<br>
-
-<!-- BIDS -->
-
-<div class="card">
-
-<h2>View Bids</h2>
-
-<input id="bidRequestId" placeholder="Request ID">
-
-<button onclick="loadBids()">Load Bids</button>
-
-<div id="bids"></div>
-
-</div>
+<div id="app"></div>
 
 <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
 <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
 <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
 
-<div id="app"></div>
-
 <script type="text/babel">
 
 const API = "https://smart-bakers.com:8443"
 
-function App() {
+function App(){
 
-  const [requests, setRequests] = React.useState([])
+const [requests,setRequests] = React.useState([])
 
-  const loadRequests = async () => {
+const loadRequests = async () => {
 
-    const res = await fetch(API + "/requests")
-    const data = await res.json()
+const res = await fetch(API+"/requests")
+const data = await res.json()
 
-    setRequests(data)
-  }
+setRequests(data)
 
-  React.useEffect(() => {
-    loadRequests()
-  }, [])
+}
 
-  const createRequest = async (e) => {
+React.useEffect(()=>{
 
-    e.preventDefault()
+loadRequests()
 
-    const form = new FormData(e.target)
+},[])
 
-    await fetch(API + "/requests", {
-      method:"POST",
-      body:form
-    })
+const createRequest = async (e) => {
 
-    e.target.reset()
+e.preventDefault()
 
-    loadRequests()
-  }
+const form = new FormData(e.target)
 
-  return (
+await fetch(API+"/requests",{
+method:"POST",
+body:form
+})
 
-    <div>
+e.target.reset()
 
-      <h1>🍰 Bakery Request Marketplace</h1>
+loadRequests()
 
-      <h2>Create Request</h2>
+}
 
-      <form onSubmit={createRequest}>
+return(
 
-        <input name="customer_id" defaultValue="1" placeholder="Customer ID"/>
+<div>
 
-        <input name="title" placeholder="Title"/>
+<h1>🍰 Bakery Request Marketplace</h1>
 
-        <input name="description" placeholder="Description"/>
+<div class="card">
 
-        <input name="budget" placeholder="Budget"/>
+<h2>Create Request</h2>
 
-        <input name="deadline" placeholder="Deadline"/>
+<form onSubmit={createRequest}>
 
-        <button>Create Request</button>
+<input name="customer_id" defaultValue="1"/>
 
-      </form>
+<input name="title" placeholder="Title"/>
 
-      <h2>Open Requests</h2>
+<input name="description" placeholder="Description"/>
 
-      {requests.map(r => (
+<input name="budget" placeholder="Budget"/>
 
-        <div key={r[0]} style={{borderBottom:"1px solid #eee",padding:"10px"}}>
+<input name="deadline" placeholder="Deadline"/>
 
-          <b>{r[1]}</b>
+<button>Create Request</button>
 
-          <div>{r[2]}</div>
+</form>
 
-          <div>Budget: {r[3]}</div>
+</div>
 
-        </div>
+<div class="card">
 
-      ))}
+<h2>Open Requests</h2>
 
-    </div>
+{requests.map(r => (
 
-  )
+<div key={r[0]} style={{borderBottom:"1px solid #eee",padding:"10px"}}>
+
+<b>{r[1]}</b>
+
+<div>{r[2]}</div>
+
+<div>Budget: {r[3]}</div>
+
+</div>
+
+))}
+
+</div>
+
+</div>
+
+)
+
 }
 
 ReactDOM.createRoot(document.getElementById("app")).render(<App/>)
@@ -378,4 +132,5 @@ ReactDOM.createRoot(document.getElementById("app")).render(<App/>)
 </script>
 
 </body>
+
 </html>
