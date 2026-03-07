@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html>
-
 <head>
 
 <title>Bakery Marketplace</title>
@@ -59,6 +58,18 @@ button:hover{
 background:#ff5e30;
 }
 
+.error{
+color:red;
+font-weight:bold;
+}
+
+.debug{
+background:#eee;
+padding:10px;
+margin-top:10px;
+font-size:12px;
+}
+
 </style>
 
 </head>
@@ -80,13 +91,37 @@ function App(){
 const [requests,setRequests] = React.useState([])
 const [bids,setBids] = React.useState([])
 const [selectedRequest,setSelectedRequest] = React.useState(null)
+const [loading,setLoading] = React.useState(false)
+const [error,setError] = React.useState(null)
+const [debug,setDebug] = React.useState(null)
 
-const loadRequests = async () => {
+async function loadRequests(){
 
-const res = await fetch(API+"/requests")
+setLoading(true)
+setError(null)
+
+try{
+
+const res = await fetch(API + "/requests")
+
 const data = await res.json()
 
+setDebug(JSON.stringify(data,null,2))
+
+if(!Array.isArray(data)){
+setError("Backend did not return an array")
+return
+}
+
 setRequests(data)
+
+}catch(e){
+
+setError(e.toString())
+
+}
+
+setLoading(false)
 
 }
 
@@ -95,7 +130,7 @@ loadRequests()
 },[])
 
 
-const createRequest = async (e) => {
+async function createRequest(e){
 
 e.preventDefault()
 
@@ -107,12 +142,13 @@ body:form
 })
 
 e.target.reset()
+
 loadRequests()
 
 }
 
 
-const submitBid = async (e) => {
+async function submitBid(e){
 
 e.preventDefault()
 
@@ -128,11 +164,12 @@ alert("Bid submitted")
 }
 
 
-const loadBids = async (requestId) => {
+async function loadBids(requestId){
 
 setSelectedRequest(requestId)
 
 const res = await fetch(API+"/bids/"+requestId)
+
 const data = await res.json()
 
 setBids(data)
@@ -140,7 +177,7 @@ setBids(data)
 }
 
 
-const acceptBid = async (requestId,bidId) => {
+async function acceptBid(requestId,bidId){
 
 const form = new FormData()
 
@@ -223,6 +260,12 @@ return(
 
 <button onClick={loadRequests}>Refresh Requests</button>
 
+{loading && <p>Loading requests...</p>}
+
+{error && <p className="error">{error}</p>}
+
+{requests.length === 0 && !loading && <p>No requests found.</p>}
+
 {requests.map(r => (
 
 <div className="request" key={r[0]}>
@@ -237,13 +280,9 @@ return(
 
 <b>Status:</b> {r[5]} <br/>
 
-{r[6] && (
-<img src={r[6]} />
-)}
+{r[6] && <img src={r[6]} />}
 
-<button onClick={()=>loadBids(r[0])}>
-View Bids
-</button>
+<button onClick={()=>loadBids(r[0])}>View Bids</button>
 
 </div>
 
@@ -257,6 +296,8 @@ View Bids
 <div className="card">
 
 <h2>Bids for Request {selectedRequest}</h2>
+
+{bids.length===0 && <p>No bids yet.</p>}
 
 {bids.map(b => (
 
@@ -283,6 +324,14 @@ Accept Bid
 </div>
 
 )}
+
+<div className="debug">
+
+<b>Debug API response:</b>
+
+<pre>{debug}</pre>
+
+</div>
 
 </div>
 
