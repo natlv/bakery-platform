@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+<title>Bakery Marketplace</title>
+
+<style>
+
+body{
+font-family: Arial;
+background:#f5f5f5;
+margin:40px;
+}
+
+h1{
+text-align:center;
+}
+
+.container{
+display:grid;
+grid-template-columns:1fr 1fr;
+gap:40px;
+}
+
+.card{
+background:white;
+padding:20px;
+border-radius:10px;
+box-shadow:0 2px 10px rgba(0,0,0,0.1);
+}
+
+input,button{
+margin:6px 0;
+padding:8px;
+width:100%;
+}
+
+button{
+background:#ff7b54;
+border:none;
+color:white;
+cursor:pointer;
+}
+
+button:hover{
+background:#ff5e30;
+}
+
+.request{
+border-bottom:1px solid #eee;
+padding:10px 0;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<h1>🍰 Bakery Request Marketplace</h1>
+
+<div class="container">
+
+<!-- CUSTOMER -->
+<div class="card">
+
+<h2>Create Request</h2>
+
+<form id="requestForm">
+
+<input name="customer_id" placeholder="Customer ID" value="1">
+
+<input name="title" placeholder="Title">
+
+<input name="description" placeholder="Description">
+
+<input name="budget" placeholder="Budget">
+
+<input name="deadline" placeholder="Deadline (YYYY-MM-DD)">
+
+<input type="file" name="file">
+
+<button>Create Request</button>
+
+</form>
+
+</div>
+
+
+<!-- BAKER -->
+<div class="card">
+
+<h2>Submit Bid</h2>
+
+<form id="bidForm">
+
+<input name="request_id" placeholder="Request ID">
+
+<input name="baker_id" placeholder="Baker ID" value="1">
+
+<input name="price" placeholder="Price">
+
+<input name="timeline" placeholder="Timeline">
+
+<input name="notes" placeholder="Notes">
+
+<button>Submit Bid</button>
+
+</form>
+
+</div>
+
+</div>
+
+<br><br>
+
+<!-- REQUEST BOARD -->
+
+<div class="card">
+
+<h2>Open Requests</h2>
+
+<button onclick="loadRequests()">Refresh Requests</button>
+
+<div id="requests"></div>
+
+</div>
+
+<br>
+
+<!-- BIDS -->
+
+<div class="card">
+
+<h2>View Bids</h2>
+
+<input id="bidRequestId" placeholder="Request ID">
+
+<button onclick="loadBids()">Load Bids</button>
+
+<div id="bids"></div>
+
+</div>
+
+<script>
+
+const API="https://YOUR_VM_IP:8443"
+
+
+async function loadRequests(){
+
+const res=await fetch(API+"/requests")
+
+const data=await res.json()
+
+const box=document.getElementById("requests")
+
+box.innerHTML=""
+
+data.forEach(r=>{
+
+const div=document.createElement("div")
+
+div.className="request"
+
+div.innerHTML=
+
+"<b>ID:</b> "+r[0]+
+"<br><b>Title:</b> "+r[1]+
+"<br><b>Description:</b> "+r[2]+
+"<br><b>Budget:</b> "+r[3]+
+"<br><b>Status:</b> "+r[5]+
+"<br><button onclick='showBids("+r[0]+")'>View Bids</button>"
+
+box.appendChild(div)
+
+})
+
+}
+
+function showBids(id){
+
+document.getElementById("bidRequestId").value=id
+
+loadBids()
+
+}
+
+
+async function loadBids(){
+
+const id=document.getElementById("bidRequestId").value
+
+const res=await fetch(API+"/bids/"+id)
+
+const data=await res.json()
+
+const box=document.getElementById("bids")
+
+box.innerHTML=""
+
+data.forEach(b=>{
+
+const div=document.createElement("div")
+
+div.className="request"
+
+div.innerHTML=
+
+"<b>Bid ID:</b> "+b[0]+
+"<br><b>Baker:</b> "+b[1]+
+"<br><b>Price:</b> "+b[2]+
+"<br><b>Timeline:</b> "+b[3]+
+"<br><b>Notes:</b> "+b[4]+
+"<br><button onclick='acceptBid("+id+","+b[0]+")'>Accept Bid</button>"
+
+box.appendChild(div)
+
+})
+
+}
+
+
+async function acceptBid(request,bid){
+
+const form=new FormData()
+
+form.append("request_id",request)
+
+form.append("bid_id",bid)
+
+await fetch(API+"/accept-bid",{
+
+method:"POST",
+
+body:form
+
+})
+
+alert("Bid accepted")
+
+loadRequests()
+
+}
+
+
+document.getElementById("requestForm").onsubmit=async(e)=>{
+
+e.preventDefault()
+
+const form=new FormData(e.target)
+
+await fetch(API+"/requests",{
+
+method:"POST",
+
+body:form
+
+})
+
+alert("Request created")
+
+loadRequests()
+
+}
+
+
+document.getElementById("bidForm").onsubmit=async(e)=>{
+
+e.preventDefault()
+
+const form=new FormData(e.target)
+
+await fetch(API+"/bids",{
+
+method:"POST",
+
+body:form
+
+})
+
+alert("Bid submitted")
+
+}
+
+</script>
+
+</body>
+</html>
