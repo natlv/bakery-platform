@@ -82,7 +82,7 @@ def get_requests():
 
     cursor.execute(
         """
-        SELECT request_id, title, description, budget, deadline, status
+        SELECT request_id, title, description, budget, deadline, status, image_url
         FROM request
         WHERE status = 'open'
         ORDER BY created_at DESC
