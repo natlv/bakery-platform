@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="en" class="h-full">
+ <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bakery Marketplace</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="https://cdn.jsdelivr.net/npm/lucide@0.263.0/dist/umd/lucide.min.js"></script>
+  <script src="/_sdk/element_sdk.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&amp;family=DM+Sans:wght@400;500;600&amp;display=swap" rel="stylesheet">
+  <style>
+    html, body { height: 100%; margin: 0; }
+    .flour-bg {
+      background: 
+        radial-gradient(ellipse at 20% 50%, rgba(255,248,240,0.12) 0%, transparent 50%),
+        radial-gradient(ellipse at 80% 20%, rgba(210,180,140,0.08) 0%, transparent 40%),
+        radial-gradient(circle at 60% 80%, rgba(255,255,255,0.06) 0%, transparent 30%),
+        linear-gradient(135deg, #3d2b1f 0%, #5c3d2e 25%, #4a3228 50%, #6b4636 75%, #3d2b1f 100%);
+    }
+    .flour-dust::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(2px 2px at 10% 15%, rgba(255,250,240,0.3), transparent),
+        radial-gradient(3px 3px at 25% 80%, rgba(255,250,240,0.2), transparent),
+        radial-gradient(2px 2px at 45% 30%, rgba(255,250,240,0.25), transparent),
+        radial-gradient(4px 4px at 70% 60%, rgba(255,250,240,0.15), transparent),
+        radial-gradient(2px 2px at 85% 25%, rgba(255,250,240,0.2), transparent),
+        radial-gradient(3px 3px at 55% 90%, rgba(255,250,240,0.18), transparent),
+        radial-gradient(2px 2px at 90% 75%, rgba(255,250,240,0.22), transparent),
+        radial-gradient(3px 3px at 30% 45%, rgba(255,250,240,0.12), transparent);
+      pointer-events: none;
+      z-index: 0;
+    }
+    .wood-grain::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: repeating-linear-gradient(
+        2deg,
+        transparent,
+        transparent 8px,
+        rgba(0,0,0,0.03) 8px,
+        rgba(0,0,0,0.03) 9px
+      );
+      pointer-events: none;
+      z-index: 0;
+    }
+    .glass-card {
+      background: rgba(255, 252, 247, 0.92);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.6);
+    }
+    .toggle-track {
+      transition: background-color 0.3s ease;
+    }
+    .toggle-thumb {
+      transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .role-label {
+      transition: color 0.3s ease, font-weight 0.3s ease;
+    }
+    .cta-btn {
+      transition: all 0.3s cubic-bezier(0.34, 1.2, 0.64, 1);
+    }
+    .cta-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(180, 120, 70, 0.35);
+    }
+    .cta-btn:active { transform: translateY(0); }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(24px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .anim-1 { animation: fadeUp 0.7s ease-out 0.1s both; }
+    .anim-2 { animation: fadeUp 0.7s ease-out 0.25s both; }
+    .anim-3 { animation: fadeUp 0.7s ease-out 0.4s both; }
+    .anim-4 { animation: fadeUp 0.7s ease-out 0.55s both; }
+    .anim-5 { animation: fadeUp 0.7s ease-out 0.7s both; }
+  </style>
+  <style>body { box-sizing: border-box; }</style>
+  <script src="/_sdk/data_sdk.js" type="text/javascript"></script>
+ </head>
+ <body class="h-full">
+  <main class="flour-bg flour-dust wood-grain relative w-full h-full flex items-center justify-center overflow-auto p-4">
+   <div class="glass-card relative z-10 rounded-3xl shadow-2xl px-8 py-10 sm:px-12 sm:py-14 w-full max-w-md mx-auto"><!-- Logo -->
+    <div class="anim-1 flex items-center justify-center gap-2 mb-2">
+     <div class="w-10 h-10 rounded-xl flex items-center justify-center" id="logo-box" style="background:#b47846;"><i data-lucide="wheat" style="width:22px;height:22px;color:#fffcf7;"></i>
+     </div>
+    </div><!-- Heading -->
+    <h1 id="main-title" class="anim-2 text-center mb-1" style="font-family:'Playfair Display',serif;font-size:30px;font-weight:700;color:#3d2b1f;">Smart Bakers</h1>
+    <p id="subtitle-text" class="anim-2 text-center mb-8" style="font-family:'DM Sans',sans-serif;font-size:14px;color:#8b7355;">Fresh from the oven, straight to your door</p><!-- Role Toggle -->
+    <div class="anim-3 flex items-center justify-center gap-4 mb-10"><span id="label-baker" class="role-label cursor-pointer select-none" style="font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;color:#3d2b1f;"> <i data-lucide="chef-hat" style="width:15px;height:15px;display:inline;vertical-align:-2px;margin-right:4px;"></i>I'm a Baker </span> <button id="toggle-btn" aria-label="Toggle between Baker and Customer" class="relative w-14 h-8 rounded-full toggle-track flex-shrink-0 focus:outline-none focus:ring-2 focus:ring-offset-2" style="background:#b47846;focus-ring-color:#b47846;" onclick="toggleRole()">
+      <div id="toggle-thumb" class="toggle-thumb absolute top-1 left-1 w-6 h-6 bg-white rounded-full shadow-md"></div></button> <span id="label-customer" class="role-label cursor-pointer select-none" style="font-family:'DM Sans',sans-serif;font-size:14px;font-weight:500;color:#8b7355;"> <i data-lucide="shopping-bag" style="width:15px;height:15px;display:inline;vertical-align:-2px;margin-right:4px;"></i>I'm a Customer </span>
+    </div><!-- Welcome message area -->
+    <div id="role-message" class="anim-4 text-center rounded-2xl p-5 mb-8" style="background:rgba(180,120,70,0.08);">
+     <p style="font-family:'DM Sans',sans-serif;font-size:13px;color:#5c3d2e;line-height:1.6;">🧑‍🍳 Ready to share your creations? <br>
+      List your baked goods and reach customers nearby.</p>
+    </div><!-- CTA Button --> <button id="cta-btn" class="anim-5 cta-btn w-full py-4 rounded-2xl text-white font-semibold tracking-wide focus:outline-none focus:ring-2 focus:ring-offset-2" style="background:#b47846;font-family:'DM Sans',sans-serif;font-size:15px;" onclick="handleContinue()"> Get Started as a Baker </button> <!-- Footer note (demo) -->
+    <p class="anim-5 text-center mt-5" style="font-family:'DM Sans',sans-serif;font-size:11px;color:#b0a08a;">🍞 Sample marketplace — no real accounts</p>
+   </div>
+  </main>
+  <script>
+    let isBaker = true;
+
+    function toggleRole() {
+      isBaker = !isBaker;
+      const thumb = document.getElementById('toggle-thumb');
+      const labelBaker = document.getElementById('label-baker');
+      const labelCustomer = document.getElementById('label-customer');
+      const msg = document.getElementById('role-message');
+      const cta = document.getElementById('cta-btn');
+
+      thumb.style.transform = isBaker ? 'translateX(0)' : 'translateX(24px)';
+      labelBaker.style.color = isBaker ? '#3d2b1f' : '#8b7355';
+      labelBaker.style.fontWeight = isBaker ? '600' : '500';
+      labelCustomer.style.color = isBaker ? '#8b7355' : '#3d2b1f';
+      labelCustomer.style.fontWeight = isBaker ? '500' : '600';
+
+      if (isBaker) {
+        msg.innerHTML = `<p style="font-family:'DM Sans',sans-serif;font-size:13px;color:#5c3d2e;line-height:1.6;">🧑‍🍳 Ready to share your creations? <br>List your baked goods and reach customers nearby.</p>`;
+        cta.textContent = currentConfig.button_text_baker;
+      } else {
+        msg.innerHTML = `<p style="font-family:'DM Sans',sans-serif;font-size:13px;color:#5c3d2e;line-height:1.6;">🛒 Discover fresh pastries, breads & treats <br>from talented local bakers near you.</p>`;
+        cta.textContent = currentConfig.button_text_customer;
+      }
+    }
+
+    function handleContinue() {
+      const cta = document.getElementById('cta-btn');
+      const role = isBaker ? 'Baker' : 'Customer';
+      cta.textContent = `Welcome, ${role}! ✨`;
+      cta.style.background = '#6b8f5e';
+      setTimeout(() => {
+        cta.textContent = isBaker ? currentConfig.button_text_baker : currentConfig.button_text_customer;
+        cta.style.background = currentConfig.primary_color || '#b47846';
+      }, 1800);
+    }
+
+    // Element SDK
+    const defaultConfig = {
+      main_title: 'Smart Bakers',
+      subtitle_text: 'Fresh from the oven, straight to your door',
+      button_text: 'Get Started',
+      primary_color: '#b47846',
+      surface_color: 'rgba(255,252,247,0.92)',
+      text_color: '#3d2b1f',
+      accent_color: '#8b7355',
+      cta_hover_color: '#6b8f5e',
+      font_family: 'Playfair Display',
+      font_size: 16
+    };
+
+    let currentConfig = { ...defaultConfig };
+    currentConfig.button_text_baker = 'Get Started as a Baker';
+    currentConfig.button_text_customer = 'Get Started as a Customer';
+
+    function applyConfig(config) {
+      currentConfig = { ...currentConfig, ...config };
+      const c = currentConfig;
+      const font = c.font_family || defaultConfig.font_family;
+      const baseSize = c.font_size || defaultConfig.font_size;
+      const primary = c.primary_color || defaultConfig.primary_color;
+      const textCol = c.text_color || defaultConfig.text_color;
+      const accent = c.accent_color || defaultConfig.accent_color;
+
+      const title = document.getElementById('main-title');
+      title.textContent = c.main_title || defaultConfig.main_title;
+      title.style.fontFamily = `${font}, serif`;
+      title.style.fontSize = `${baseSize * 1.875}px`;
+      title.style.color = textCol;
+
+      const sub = document.getElementById('subtitle-text');
+      sub.textContent = c.subtitle_text || defaultConfig.subtitle_text;
+      sub.style.color = accent;
+      sub.style.fontSize = `${baseSize * 0.875}px`;
+
+      const cta = document.getElementById('cta-btn');
+      cta.style.background = primary;
+      cta.style.fontSize = `${baseSize * 0.9375}px`;
+      if (isBaker) {
+        cta.textContent = c.button_text ? c.button_text + ' as a Baker' : defaultConfig.button_text + ' as a Baker';
+      } else {
+        cta.textContent = c.button_text ? c.button_text + ' as a Customer' : defaultConfig.button_text + ' as a Customer';
+      }
+      currentConfig.button_text_baker = (c.button_text || defaultConfig.button_text) + ' as a Baker';
+      currentConfig.button_text_customer = (c.button_text || defaultConfig.button_text) + ' as a Customer';
+
+      document.getElementById('logo-box').style.background = primary;
+      document.getElementById('toggle-btn').style.background = primary;
+
+      document.getElementById('label-baker').style.color = isBaker ? textCol : accent;
+      document.getElementById('label-customer').style.color = isBaker ? accent : textCol;
+    }
+
+    window.elementSdk.init({
+      defaultConfig,
+      onConfigChange: async (config) => applyConfig(config),
+      mapToCapabilities: (config) => ({
+        recolorables: [
+          { get: () => config.primary_color || defaultConfig.primary_color, set: (v) => { config.primary_color = v; window.elementSdk.setConfig({ primary_color: v }); } },
+          { get: () => config.surface_color || defaultConfig.surface_color, set: (v) => { config.surface_color = v; window.elementSdk.setConfig({ surface_color: v }); } },
+          { get: () => config.text_color || defaultConfig.text_color, set: (v) => { config.text_color = v; window.elementSdk.setConfig({ text_color: v }); } },
+          { get: () => config.accent_color || defaultConfig.accent_color, set: (v) => { config.accent_color = v; window.elementSdk.setConfig({ accent_color: v }); } }
+        ],
+        borderables: [],
+        fontEditable: { get: () => config.font_family || defaultConfig.font_family, set: (v) => { config.font_family = v; window.elementSdk.setConfig({ font_family: v }); } },
+        fontSizeable: { get: () => config.font_size || defaultConfig.font_size, set: (v) => { config.font_size = v; window.elementSdk.setConfig({ font_size: v }); } }
+      }),
+      mapToEditPanelValues: (config) => new Map([
+        ['main_title', config.main_title || defaultConfig.main_title],
+        ['subtitle_text', config.subtitle_text || defaultConfig.subtitle_text],
+        ['button_text', config.button_text || defaultConfig.button_text]
+      ])
+    });
+
+    lucide.createIcons();
+  </script>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9e2356ae92c95542',t:'MTc3NDQ5ODU3Mi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
