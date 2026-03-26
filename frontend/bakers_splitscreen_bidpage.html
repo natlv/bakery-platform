@@ -1,0 +1,232 @@
+<!doctype html>
+<html lang="en" class="h-full">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Smart Bakers — Place Bid</title>
+  <script src="master_controller.js"></script>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    html,body{height:100%;margin:0;}*{box-sizing:border-box;}
+    .flour-bg{background:radial-gradient(ellipse at 20% 50%,rgba(255,248,240,.15) 0%,transparent 50%),linear-gradient(135deg,#3e2723 0%,#4e342e 25%,#5d4037 50%,#4e342e 75%,#3e2723 100%);}
+    .flour-dust{position:fixed;inset:0;opacity:.1;pointer-events:none;background-image:radial-gradient(circle at 15% 25%,#fff 1px,transparent 1px),radial-gradient(circle at 75% 35%,#fff 1.5px,transparent 1.5px),radial-gradient(circle at 85% 75%,#fff 1px,transparent 1px);}
+    .glass{background:rgba(255,252,247,.92);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,.6);}
+    .panel{background:rgba(255,252,247,.95);border:1px solid rgba(200,149,108,.18);border-radius:24px;padding:28px;}
+    .inp{width:100%;padding:12px 14px;border:1px solid rgba(200,149,108,.3);border-radius:12px;font-family:'DM Sans',sans-serif;color:#3e2723;font-size:14px;background:rgba(255,255,255,.8);outline:none;transition:all .2s;}
+    .inp:focus{border-color:#c8956c;box-shadow:0 0 0 3px rgba(200,149,108,.1);}
+    .badge{display:inline-block;padding:5px 11px;border-radius:9px;font-size:12px;font-weight:600;background:rgba(200,149,108,.12);color:#8d6e63;border:1px solid rgba(200,149,108,.2);font-family:'DM Sans',sans-serif;}
+    .diet-tag{display:inline-block;padding:4px 9px;border-radius:7px;font-size:11px;font-weight:600;background:rgba(107,143,94,.1);color:#4a7c3f;border:1px solid rgba(107,143,94,.2);font-family:'DM Sans',sans-serif;}
+    .submit-btn{width:100%;padding:14px;background:linear-gradient(135deg,#c8956c,#a67c52);color:#fffaf5;border:none;border-radius:14px;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:600;cursor:pointer;transition:all .3s cubic-bezier(.34,1.56,.64,1);box-shadow:0 8px 20px rgba(200,149,108,.25);}
+    .submit-btn:hover{transform:translateY(-2px);box-shadow:0 12px 28px rgba(200,149,108,.35);}
+    .price-suggest{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;}
+    .suggest-chip{padding:5px 12px;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;cursor:pointer;border:1px solid rgba(200,149,108,.3);background:transparent;color:#8d6e63;transition:all .2s;}
+    .suggest-chip:hover{background:rgba(200,149,108,.1);color:#c8956c;}
+    @keyframes slideLeft{from{opacity:0;transform:translateX(-24px)}to{opacity:1;transform:translateX(0)}}
+    @keyframes slideRight{from{opacity:0;transform:translateX(24px)}to{opacity:1;transform:translateX(0)}}
+    .slide-l{animation:slideLeft .55s ease-out both;}
+    .slide-r{animation:slideRight .55s ease-out both;}
+    @media(max-width:768px){.split-wrap{flex-direction:column!important;}}
+  </style>
+</head>
+<body class="h-full">
+<div class="flour-bg h-full w-full flex flex-col relative overflow-auto">
+  <div class="flour-dust"></div>
+
+  <!-- Nav -->
+  <nav data-sb-nav class="glass sticky top-0 z-20 shadow-sm" style="padding:16px 24px;display:flex;align-items:center;justify-content:space-between;position:relative;"></nav>
+
+  <div class="flex-1 w-full max-w-6xl mx-auto px-6 py-8 relative z-10">
+
+    <!-- Breadcrumb -->
+    <div style="margin-bottom:20px;display:flex;align-items:center;gap:8px;">
+      <a href="bakery_marketplace_dashboard_search.html" style="font-family:'DM Sans',sans-serif;color:rgba(255,250,245,.5);font-size:13px;text-decoration:none;" onmouseover="this.style.color='rgba(255,250,245,.8)'" onmouseout="this.style.color='rgba(255,250,245,.5)'">← Marketplace</a>
+      <span style="color:rgba(255,250,245,.3);">/</span>
+      <span style="color:rgba(255,250,245,.7);font-family:'DM Sans',sans-serif;font-size:13px;">Place Bid</span>
+    </div>
+
+    <!-- Split Layout -->
+    <div class="split-wrap" style="display:flex;gap:28px;align-items:flex-start;">
+
+      <!-- LEFT: Request Details -->
+      <div class="slide-l" style="flex:1;min-width:0;">
+        <div class="panel">
+          <div style="height:200px;display:flex;align-items:center;justify-content:center;font-size:90px;background:linear-gradient(135deg,rgba(200,149,108,.08),rgba(210,180,140,.06));border-radius:16px;margin-bottom:20px;">🎂</div>
+
+          <h1 style="font-family:'Playfair Display',serif;color:#3e2723;font-size:26px;font-weight:700;margin:0 0 12px;">Elegant Wedding Cake</h1>
+
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;">
+            <span class="badge">Wedding Cake</span>
+            <span style="background:linear-gradient(135deg,#c8956c,#a67c52);color:#fffaf5;padding:5px 12px;border-radius:9px;font-size:13px;font-weight:700;font-family:'DM Sans',sans-serif;">$450 Budget</span>
+          </div>
+
+          <p style="font-family:'DM Sans',sans-serif;color:#8d6e63;font-size:14px;line-height:1.7;margin-bottom:20px;">Three-tier wedding cake with delicate floral design and premium fondant details. Perfect for an intimate garden celebration. Customer prefers fresh flowers for decoration.</p>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;padding:16px;background:rgba(200,149,108,.04);border-radius:14px;border:1px solid rgba(200,149,108,.08);margin-bottom:16px;">
+            <div>
+              <p style="font-family:'DM Sans',sans-serif;color:#a1887f;font-size:10px;text-transform:uppercase;letter-spacing:.5px;margin:0 0 5px;font-weight:600;">Deadline</p>
+              <p style="font-family:'DM Sans',sans-serif;color:#3e2723;font-size:15px;margin:0;font-weight:600;">April 15, 2024</p>
+            </div>
+            <div>
+              <p style="font-family:'DM Sans',sans-serif;color:#a1887f;font-size:10px;text-transform:uppercase;letter-spacing:.5px;margin:0 0 5px;font-weight:600;">Current Bids</p>
+              <p style="font-family:'DM Sans',sans-serif;color:#3e2723;font-size:15px;margin:0;font-weight:600;">3 bids · lowest $380</p>
+            </div>
+            <div>
+              <p style="font-family:'DM Sans',sans-serif;color:#a1887f;font-size:10px;text-transform:uppercase;letter-spacing:.5px;margin:0 0 5px;font-weight:600;">Posted By</p>
+              <p style="font-family:'DM Sans',sans-serif;color:#3e2723;font-size:15px;margin:0;font-weight:600;">Emily T.</p>
+            </div>
+            <div>
+              <p style="font-family:'DM Sans',sans-serif;color:#a1887f;font-size:10px;text-transform:uppercase;letter-spacing:.5px;margin:0 0 5px;font-weight:600;">Location</p>
+              <p style="font-family:'DM Sans',sans-serif;color:#3e2723;font-size:15px;margin:0;font-weight:600;">Singapore CBD</p>
+            </div>
+          </div>
+
+          <div>
+            <p style="font-family:'DM Sans',sans-serif;color:#a1887f;font-size:11px;text-transform:uppercase;letter-spacing:.5px;margin:0 0 8px;font-weight:600;">Dietary Requirements</p>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;">
+              <span class="diet-tag">Vegan</span>
+              <span class="diet-tag">Gluten Free</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT: Bid Form -->
+      <div class="slide-r" style="flex:1;min-width:0;">
+        <div class="panel" id="bid-form-panel">
+          <h2 style="font-family:'Playfair Display',serif;color:#3e2723;font-size:24px;font-weight:700;margin:0 0 6px;">Your Proposal</h2>
+          <p style="font-family:'DM Sans',sans-serif;color:#a1887f;font-size:13px;margin:0 0 24px;">Make it compelling — you're competing with 3 other bakers.</p>
+
+          <div style="display:flex;flex-direction:column;gap:18px;">
+
+            <!-- Price -->
+            <div>
+              <label style="font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;color:#3e2723;display:block;margin-bottom:6px;">Your Bid Price *</label>
+              <div style="position:relative;">
+                <span style="position:absolute;left:14px;top:50%;transform:translateY(-50%);font-family:'DM Sans',sans-serif;color:#8d6e63;font-weight:600;">$</span>
+                <input class="inp" id="bid-price" type="number" min="0" step="1" placeholder="e.g. 400" style="padding-left:28px;" oninput="updateValueMsg()">
+              </div>
+              <div class="price-suggest">
+                <button class="suggest-chip" onclick="setPrice(350)">$350 (-22%)</button>
+                <button class="suggest-chip" onclick="setPrice(400)">$400 (-11%)</button>
+                <button class="suggest-chip" onclick="setPrice(430)">$430 (-4%)</button>
+                <button class="suggest-chip" onclick="setPrice(450)">$450 (match)</button>
+              </div>
+              <p id="value-msg" style="font-family:'DM Sans',sans-serif;font-size:12px;color:#6b8f5e;margin-top:6px;display:none;"></p>
+            </div>
+
+            <!-- Timeline -->
+            <div>
+              <label style="font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;color:#3e2723;display:block;margin-bottom:6px;">Estimated Timeline *</label>
+              <input class="inp" id="bid-timeline" type="text" placeholder="e.g., 2 weeks, 10 days">
+            </div>
+
+            <!-- Specialties -->
+            <div>
+              <label style="font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;color:#3e2723;display:block;margin-bottom:6px;">Your Relevant Experience</label>
+              <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;" id="specialty-chips">
+                <button class="suggest-chip" onclick="toggleSpecialty(this,'Floral cakes')">Floral cakes</button>
+                <button class="suggest-chip" onclick="toggleSpecialty(this,'Fondant')">Fondant</button>
+                <button class="suggest-chip" onclick="toggleSpecialty(this,'Vegan baking')">Vegan baking</button>
+                <button class="suggest-chip" onclick="toggleSpecialty(this,'Tiered cakes')">Tiered cakes</button>
+                <button class="suggest-chip" onclick="toggleSpecialty(this,'Wedding specialist')">Wedding specialist</button>
+              </div>
+            </div>
+
+            <!-- Notes -->
+            <div>
+              <label style="font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;color:#3e2723;display:block;margin-bottom:6px;">Message to Customer *</label>
+              <textarea class="inp" id="bid-notes" placeholder="Introduce yourself, explain your approach, and highlight why you're the perfect baker for this request…" style="min-height:120px;resize:vertical;font-family:'DM Sans',sans-serif;"></textarea>
+            </div>
+
+            <div id="form-err" style="display:none;padding:12px;background:rgba(229,57,53,.08);border:1px solid rgba(229,57,53,.2);border-radius:10px;">
+              <p style="font-family:'DM Sans',sans-serif;font-size:13px;color:#c62828;margin:0;" id="form-err-msg">Please fill in all required fields.</p>
+            </div>
+
+            <button class="submit-btn" onclick="handleSubmit()">Submit My Bid</button>
+          </div>
+        </div>
+
+        <!-- Success State -->
+        <div id="success-panel" style="display:none;" class="panel" style="text-align:center;">
+          <div style="text-align:center;">
+            <div style="font-size:56px;margin-bottom:16px;">🎉</div>
+            <h2 style="font-family:'Playfair Display',serif;color:#3e2723;font-size:24px;font-weight:700;margin:0 0 8px;">Bid Submitted!</h2>
+            <p style="font-family:'DM Sans',sans-serif;color:#8d6e63;font-size:14px;line-height:1.6;margin:0 0 24px;">Your proposal has been sent to the customer. You'll be notified if they accept your bid!</p>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:16px;background:rgba(200,149,108,.04);border-radius:14px;border:1px solid rgba(200,149,108,.1);margin-bottom:24px;" id="summary-grid"></div>
+            <a href="bakery_marketplace_dashboard_search.html">
+              <button style="width:100%;padding:13px;background:linear-gradient(135deg,#c8956c,#a67c52);color:#fffaf5;border:none;border-radius:12px;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;cursor:pointer;">Browse More Requests →</button>
+            </a>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+  const selectedSpecialties = new Set();
+
+  function setPrice(val) {
+    document.getElementById('bid-price').value = val;
+    updateValueMsg();
+  }
+
+  function updateValueMsg() {
+    const price = parseFloat(document.getElementById('bid-price').value);
+    const msg = document.getElementById('value-msg');
+    if (!price) { msg.style.display='none'; return; }
+    const budget = 450, lowest = 380;
+    let text = '';
+    if (price < lowest) { text = `✨ ${Math.round((1-price/budget)*100)}% below budget — very competitive!`; msg.style.color = '#6b8f5e'; }
+    else if (price <= budget) { text = `👍 Within budget. ${price < budget ? Math.round((1-price/budget)*100)+'% below max.' : 'Matches max budget.'}`; msg.style.color = '#b47846'; }
+    else { text = `⚠️ $${price - budget} above customer's budget.`; msg.style.color = '#e53935'; }
+    msg.textContent = text;
+    msg.style.display = 'block';
+  }
+
+  function toggleSpecialty(btn, label) {
+    if (selectedSpecialties.has(label)) {
+      selectedSpecialties.delete(label);
+      btn.style.background = 'transparent';
+      btn.style.color = '#8d6e63';
+      btn.style.borderColor = 'rgba(200,149,108,.3)';
+    } else {
+      selectedSpecialties.add(label);
+      btn.style.background = 'linear-gradient(135deg,#c8956c,#a67c52)';
+      btn.style.color = '#fffaf5';
+      btn.style.borderColor = 'transparent';
+    }
+  }
+
+  function handleSubmit() {
+    const price    = document.getElementById('bid-price').value;
+    const timeline = document.getElementById('bid-timeline').value.trim();
+    const notes    = document.getElementById('bid-notes').value.trim();
+    const errEl    = document.getElementById('form-err');
+    const errMsg   = document.getElementById('form-err-msg');
+    errEl.style.display = 'none';
+
+    if (!price || parseFloat(price) <= 0) { errMsg.textContent = 'Please enter a valid bid price.'; errEl.style.display='block'; return; }
+    if (!timeline) { errMsg.textContent = 'Please provide an estimated timeline.'; errEl.style.display='block'; return; }
+    if (!notes) { errMsg.textContent = 'Please write a message to the customer.'; errEl.style.display='block'; return; }
+
+    // Show success
+    document.getElementById('bid-form-panel').style.display = 'none';
+    const summary = document.getElementById('summary-grid');
+    summary.innerHTML = `
+      <div style="text-align:center;">
+        <p style="font-family:'DM Sans',sans-serif;color:#a1887f;font-size:10px;text-transform:uppercase;letter-spacing:.5px;margin:0 0 4px;font-weight:600;">Your Bid</p>
+        <p style="font-family:'Playfair Display',serif;color:#3e2723;font-size:20px;font-weight:700;margin:0;">$${price}</p>
+      </div>
+      <div style="text-align:center;">
+        <p style="font-family:'DM Sans',sans-serif;color:#a1887f;font-size:10px;text-transform:uppercase;letter-spacing:.5px;margin:0 0 4px;font-weight:600;">Timeline</p>
+        <p style="font-family:'Playfair Display',serif;color:#3e2723;font-size:20px;font-weight:700;margin:0;">${timeline}</p>
+      </div>
+    `;
+    document.getElementById('success-panel').style.display = 'block';
+  }
+</script>
+</body>
+</html>

@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="en" class="h-full">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Smart Bakers — Marketplace</title>
+  <script src="master_controller.js"></script>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    html,body{height:100%;margin:0;}*{box-sizing:border-box;}
+    .flour-bg{background:radial-gradient(ellipse at 20% 50%,rgba(255,248,240,.15) 0%,transparent 50%),radial-gradient(ellipse at 80% 20%,rgba(210,180,140,.1) 0%,transparent 40%),linear-gradient(135deg,#3e2723 0%,#4e342e 25%,#5d4037 50%,#4e342e 75%,#3e2723 100%);}
+    .flour-dust{position:fixed;inset:0;opacity:.1;pointer-events:none;background-image:radial-gradient(circle at 15% 25%,#fff 1px,transparent 1px),radial-gradient(circle at 45% 15%,#fff .5px,transparent .5px),radial-gradient(circle at 75% 35%,#fff 1.5px,transparent 1.5px),radial-gradient(circle at 85% 75%,#fff 1px,transparent 1px);}
+    .glass{background:rgba(255,252,247,.92);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,.6);}
+    .inp{padding:10px 14px;border:1px solid rgba(200,149,108,.3);border-radius:10px;font-family:'DM Sans',sans-serif;color:#3e2723;font-size:13px;background:rgba(255,255,255,.7);outline:none;transition:all .2s;width:100%;}
+    .inp:focus{border-color:#c8956c;box-shadow:0 0 0 3px rgba(200,149,108,.1);}
+    .request-card{background:rgba(255,252,247,.96);border:1px solid rgba(200,149,108,.18);border-radius:20px;overflow:hidden;transition:all .35s cubic-bezier(.34,1.56,.64,1);cursor:pointer;}
+    .request-card:hover{transform:translateY(-8px);box-shadow:0 24px 48px rgba(62,39,35,.16);border-color:rgba(200,149,108,.4);}
+    .badge{display:inline-block;padding:4px 10px;border-radius:8px;font-size:11px;font-weight:600;background:rgba(200,149,108,.12);color:#8d6e63;border:1px solid rgba(200,149,108,.2);font-family:'DM Sans',sans-serif;}
+    .price-tag{background:linear-gradient(135deg,#c8956c,#a67c52);color:#fffaf5;font-weight:700;border-radius:10px;padding:7px 13px;font-size:15px;font-family:'DM Sans',sans-serif;}
+    .bid-btn{width:100%;padding:11px;background:linear-gradient(135deg,#c8956c,#a67c52);color:#fffaf5;border:none;border-radius:11px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:all .2s;}
+    .bid-btn:hover{transform:translateY(-1px);box-shadow:0 6px 16px rgba(200,149,108,.3);}
+    .sort-chip{padding:6px 14px;border-radius:20px;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;cursor:pointer;border:1px solid rgba(200,149,108,.3);transition:all .2s;background:transparent;color:#8d6e63;}
+    .sort-chip.active{background:linear-gradient(135deg,#c8956c,#a67c52);color:#fffaf5;border-color:transparent;}
+    @keyframes slideUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+    .slide-up{animation:slideUp .45s ease-out both;}
+    .diet-tag{display:inline-block;padding:3px 8px;border-radius:6px;font-size:10px;font-weight:600;background:rgba(107,143,94,.1);color:#4a7c3f;border:1px solid rgba(107,143,94,.2);font-family:'DM Sans',sans-serif;}
+  </style>
+</head>
+<body class="h-full">
+<div class="flour-bg h-full w-full flex flex-col relative overflow-auto">
+  <div class="flour-dust"></div>
+
+  <!-- Nav -->
+  <nav data-sb-nav class="glass sticky top-0 z-20 shadow-sm" style="padding:16px 24px;display:flex;align-items:center;justify-content:space-between;position:relative;"></nav>
+
+  <!-- Page Content -->
+  <div class="flex-1 w-full max-w-7xl mx-auto px-6 py-8 relative z-10">
+
+    <div style="margin-bottom:24px;">
+      <h1 style="font-family:'Playfair Display',serif;color:#fffaf5;font-size:34px;font-weight:700;margin:0 0 6px;">Bakery Request Marketplace</h1>
+      <p style="font-family:'DM Sans',sans-serif;color:rgba(255,250,245,.6);font-size:15px;margin:0;">Browse open requests and place your best bid</p>
+    </div>
+
+    <!-- Filters -->
+    <div class="glass rounded-2xl p-4 mb-5" style="display:grid;grid-template-columns:2fr 1fr 1fr;gap:12px;align-items:end;">
+      <div>
+        <label style="font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;color:#3e2723;display:block;margin-bottom:5px;">Search Requests</label>
+        <input class="inp" id="search-inp" placeholder="Wedding cake, sourdough bread…" oninput="applyFilters()">
+      </div>
+      <div>
+        <label style="font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;color:#3e2723;display:block;margin-bottom:5px;">Variety</label>
+        <select class="inp" id="variety-filter" onchange="applyFilters()">
+          <option value="">All Varieties</option>
+          <option value="wedding-cake">Wedding Cake</option>
+          <option value="birthday-cake">Birthday Cake</option>
+          <option value="bread">Bread</option>
+          <option value="cookies">Cookies</option>
+          <option value="pastry">Pastry</option>
+          <option value="cupcakes">Cupcakes</option>
+        </select>
+      </div>
+      <div>
+        <label style="font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;color:#3e2723;display:block;margin-bottom:5px;">Budget</label>
+        <select class="inp" id="budget-filter" onchange="applyFilters()">
+          <option value="">Any Budget</option>
+          <option value="0-50">Under $50</option>
+          <option value="50-100">$50 – $100</option>
+          <option value="100-300">$100 – $300</option>
+          <option value="300+">$300+</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Sort chips -->
+    <div style="display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap;align-items:center;">
+      <span style="font-family:'DM Sans',sans-serif;color:rgba(255,250,245,.6);font-size:13px;">Sort:</span>
+      <button class="sort-chip active" onclick="setSort('newest',this)">Newest</button>
+      <button class="sort-chip" onclick="setSort('budget-high',this)">Highest Budget</button>
+      <button class="sort-chip" onclick="setSort('budget-low',this)">Lowest Budget</button>
+      <button class="sort-chip" onclick="setSort('deadline',this)">Deadline Soon</button>
+      <button class="sort-chip" onclick="setSort('fewest-bids',this)">Fewest Bids</button>
+    </div>
+
+    <p id="results-count" style="font-family:'DM Sans',sans-serif;color:rgba(255,250,245,.5);font-size:13px;margin-bottom:16px;"></p>
+
+    <!-- Grid -->
+    <div id="requests-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:20px;"></div>
+    <p id="empty-msg" style="display:none;text-align:center;padding:60px;font-family:'DM Sans',sans-serif;color:rgba(255,250,245,.4);font-size:16px;">No requests match your search.</p>
+  </div>
+</div>
+
+<script>
+  let currentSort = 'newest';
+
+  const mockRequests = [
+    { id:1, title:'Elegant Wedding Cake',     variety:'wedding-cake',  emoji:'🎂', budget:450, deadline:'2024-04-15', bidsCount:3, description:'Three-tier with floral design & fondant. Fresh flowers preferred.', dietary:['Vegan','Gluten Free'] },
+    { id:2, title:'Chocolate Birthday Cake',  variety:'birthday-cake', emoji:'🍰', budget:80,  deadline:'2024-03-20', bidsCount:2, description:'Rich chocolate ganache, serves 20 people.', dietary:['Halal'] },
+    { id:3, title:'Sourdough Bread Loaves',   variety:'bread',         emoji:'🍞', budget:45,  deadline:'2024-03-18', bidsCount:0, description:'Traditional crusty sourdough x4. Need pickup or delivery.', dietary:['Vegan'] },
+    { id:4, title:'Rainbow Assorted Cookies', variety:'cookies',       emoji:'🍪', budget:120, deadline:'2024-03-22', bidsCount:4, description:'Colorful sugar cookies for school event, 60 pieces.', dietary:['Nut Free'] },
+    { id:5, title:'Classic French Croissants',variety:'pastry',        emoji:'🥐', budget:60,  deadline:'2024-04-01', bidsCount:1, description:'Handmade buttery croissants x12 for Sunday brunch.', dietary:[] },
+    { id:6, title:'Vegan Cupcakes Batch',     variety:'cupcakes',      emoji:'🧁', budget:95,  deadline:'2024-03-30', bidsCount:2, description:'24 vegan vanilla cupcakes with buttercream frosting.', dietary:['Vegan','Dairy Free'] },
+    { id:7, title:'Anniversary Tiramisu',     variety:'pastry',        emoji:'☕', budget:150, deadline:'2024-04-10', bidsCount:0, description:'Classic Italian tiramisu for 25 guests.', dietary:['Sugar Control'] },
+    { id:8, title:'Hamantaschen Cookies',     variety:'cookies',       emoji:'🔺', budget:70,  deadline:'2024-03-24', bidsCount:1, description:'Traditional filled cookies, apricot and poppy seed.', dietary:['Kosher'] },
+  ];
+
+  let filtered = [...mockRequests];
+
+  function setSort(sort, el) {
+    currentSort = sort;
+    document.querySelectorAll('.sort-chip').forEach(c => c.classList.remove('active'));
+    el.classList.add('active');
+    applyFilters();
+  }
+
+  function budgetMatches(budget, filter) {
+    if (!filter) return true;
+    if (filter === '0-50')  return budget <= 50;
+    if (filter === '50-100') return budget > 50 && budget <= 100;
+    if (filter === '100-300') return budget > 100 && budget <= 300;
+    if (filter === '300+') return budget > 300;
+    return true;
+  }
+
+  function applyFilters() {
+    const search  = document.getElementById('search-inp').value.toLowerCase();
+    const variety = document.getElementById('variety-filter').value;
+    const budget  = document.getElementById('budget-filter').value;
+
+    filtered = mockRequests.filter(r => {
+      const matchSearch  = r.title.toLowerCase().includes(search) || r.description.toLowerCase().includes(search);
+      const matchVariety = !variety || r.variety === variety;
+      const matchBudget  = budgetMatches(r.budget, budget);
+      return matchSearch && matchVariety && matchBudget;
+    });
+
+    if (currentSort === 'newest')       filtered.sort((a,b) => b.id - a.id);
+    if (currentSort === 'budget-high')  filtered.sort((a,b) => b.budget - a.budget);
+    if (currentSort === 'budget-low')   filtered.sort((a,b) => a.budget - b.budget);
+    if (currentSort === 'deadline')     filtered.sort((a,b) => new Date(a.deadline) - new Date(b.deadline));
+    if (currentSort === 'fewest-bids')  filtered.sort((a,b) => a.bidsCount - b.bidsCount);
+
+    document.getElementById('results-count').textContent = `Showing ${filtered.length} request${filtered.length !== 1 ? 's' : ''}`;
+    renderCards();
+  }
+
+  function renderCards() {
+    const grid  = document.getElementById('requests-grid');
+    const empty = document.getElementById('empty-msg');
+    grid.innerHTML = '';
+    if (!filtered.length) { empty.style.display = 'block'; return; }
+    empty.style.display = 'none';
+
+    filtered.forEach((req, i) => {
+      const card = document.createElement('div');
+      card.className = 'request-card slide-up';
+      card.style.animationDelay = `${i * 0.07}s`;
+
+      const daysLeft = Math.ceil((new Date(req.deadline) - new Date()) / 86400000);
+      const urgency  = daysLeft <= 3 ? '#e53935' : daysLeft <= 7 ? '#e08a2e' : '#a1887f';
+
+      card.innerHTML = `
+        <div style="height:130px;display:flex;align-items:center;justify-content:center;font-size:64px;background:linear-gradient(135deg,rgba(200,149,108,.08),rgba(210,180,140,.06));">${req.emoji}</div>
+        <div style="padding:18px;">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;">
+            <h3 style="font-family:'Playfair Display',serif;color:#3e2723;font-size:17px;font-weight:600;margin:0;flex:1;margin-right:10px;">${req.title}</h3>
+            <div class="price-tag">$${req.budget}</div>
+          </div>
+
+          <p style="font-family:'DM Sans',sans-serif;color:#8d6e63;font-size:13px;margin:0 0 12px;line-height:1.5;">${req.description}</p>
+
+          <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;">
+            <span class="badge">${req.variety.replace('-',' ')}</span>
+            ${req.dietary.map(d => `<span class="diet-tag">${d}</span>`).join('')}
+          </div>
+
+          <div style="display:flex;justify-content:space-between;margin-bottom:14px;">
+            <span style="font-family:'DM Sans',sans-serif;font-size:12px;color:${urgency};">📅 ${daysLeft > 0 ? daysLeft + ' days left' : 'Overdue'}</span>
+            <span style="font-family:'DM Sans',sans-serif;font-size:12px;color:#a1887f;">🏷️ ${req.bidsCount} bid${req.bidsCount !== 1 ? 's' : ''}</span>
+          </div>
+
+          <a href="bakers_splitscreen_bidpage.html">
+            <button class="bid-btn">Place My Bid →</button>
+          </a>
+        </div>
+      `;
+      grid.appendChild(card);
+    });
+  }
+
+  document.addEventListener('DOMContentLoaded', () => applyFilters());
+</script>
+</body>
+</html>

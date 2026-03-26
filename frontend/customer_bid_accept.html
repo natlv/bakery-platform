@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="en" class="h-full">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Smart Bakers — Compare Bids</title>
+  <script src="master_controller.js"></script>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    html,body{height:100%;margin:0;}*{box-sizing:border-box;}
+    .flour-bg{background:radial-gradient(ellipse at 20% 50%,rgba(255,248,240,.15) 0%,transparent 50%),linear-gradient(135deg,#3e2723 0%,#4e342e 25%,#5d4037 50%,#4e342e 75%,#3e2723 100%);}
+    .flour-dust{position:fixed;inset:0;opacity:.1;pointer-events:none;background-image:radial-gradient(circle at 15% 25%,#fff 1px,transparent 1px),radial-gradient(circle at 75% 35%,#fff 1.5px,transparent 1.5px),radial-gradient(circle at 85% 75%,#fff 1px,transparent 1px);}
+    .glass{background:rgba(255,252,247,.92);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,.6);}
+    .inp{padding:10px 14px;border:1px solid rgba(200,149,108,.3);border-radius:10px;font-family:'DM Sans',sans-serif;color:#3e2723;font-size:13px;background:rgba(255,255,255,.7);outline:none;transition:all .2s;}
+    .inp:focus{border-color:#c8956c;}
+    .bid-card{background:#fffcf7;border:1px solid rgba(200,149,108,.18);border-radius:18px;padding:22px;transition:all .3s cubic-bezier(.34,1.56,.64,1);}
+    .bid-card:hover{transform:translateY(-4px);box-shadow:0 16px 32px rgba(62,39,35,.1);border-color:rgba(200,149,108,.35);}
+    .bid-card.winner{border-color:#6b8f5e;background:rgba(107,143,94,.04);}
+    .accept-btn{padding:11px 24px;background:linear-gradient(135deg,#c8956c,#a67c52);color:#fffaf5;border:none;border-radius:11px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:all .3s cubic-bezier(.34,1.56,.64,1);white-space:nowrap;}
+    .accept-btn:hover{transform:translateY(-2px);box-shadow:0 8px 20px rgba(200,149,108,.3);}
+    .decline-btn{padding:11px 18px;background:transparent;color:#a1887f;border:1px solid rgba(200,149,108,.3);border-radius:11px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:all .2s;}
+    .decline-btn:hover{background:rgba(200,149,108,.05);}
+    .sort-chip{padding:6px 14px;border-radius:20px;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;cursor:pointer;border:1px solid rgba(200,149,108,.3);transition:all .2s;background:transparent;color:#8d6e63;}
+    .sort-chip.active{background:linear-gradient(135deg,#c8956c,#a67c52);color:#fffaf5;border-color:transparent;}
+    .badge{display:inline-block;padding:4px 10px;border-radius:8px;font-size:11px;font-weight:600;background:rgba(200,149,108,.12);color:#8d6e63;border:1px solid rgba(200,149,108,.2);font-family:'DM Sans',sans-serif;}
+    .star-fill{color:#f5a623;}
+    @keyframes slideUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+    .slide-up{animation:slideUp .45s ease-out both;}
+  </style>
+</head>
+<body class="h-full">
+<div class="flour-bg h-full w-full flex flex-col relative overflow-auto">
+  <div class="flour-dust"></div>
+
+  <!-- Nav -->
+  <nav data-sb-nav class="glass sticky top-0 z-20 shadow-sm" style="padding:16px 24px;display:flex;align-items:center;justify-content:space-between;position:relative;"></nav>
+
+  <div class="flex-1 w-full max-w-4xl mx-auto px-6 py-10 relative z-10">
+
+    <!-- Header -->
+    <div style="margin-bottom:24px;">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:6px;">
+        <a href="main_page_portfolio.html" style="color:rgba(255,250,245,.5);font-family:'DM Sans',sans-serif;font-size:13px;text-decoration:none;transition:color .2s;" onmouseover="this.style.color='rgba(255,250,245,.8)'" onmouseout="this.style.color='rgba(255,250,245,.5)'">← My Requests</a>
+        <span style="color:rgba(255,250,245,.3);">/</span>
+        <span style="color:rgba(255,250,245,.7);font-family:'DM Sans',sans-serif;font-size:13px;">Elegant Wedding Cake</span>
+      </div>
+      <h1 style="font-family:'Playfair Display',serif;color:#fffaf5;font-size:32px;font-weight:700;margin:0 0 4px;">Compare Bids</h1>
+      <p style="font-family:'DM Sans',sans-serif;color:rgba(255,250,245,.6);font-size:15px;margin:0;">Review and accept the best proposal for your request</p>
+    </div>
+
+    <!-- Summary Bar -->
+    <div class="glass rounded-2xl p-4 mb-6" style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;">
+      <div style="text-align:center;">
+        <p style="font-family:'DM Sans',sans-serif;color:#a1887f;font-size:11px;text-transform:uppercase;letter-spacing:.5px;margin:0 0 4px;font-weight:600;">Your Budget</p>
+        <p style="font-family:'Playfair Display',serif;color:#3e2723;font-size:22px;font-weight:700;margin:0;">$450</p>
+      </div>
+      <div style="text-align:center;">
+        <p style="font-family:'DM Sans',sans-serif;color:#a1887f;font-size:11px;text-transform:uppercase;letter-spacing:.5px;margin:0 0 4px;font-weight:600;">Total Bids</p>
+        <p style="font-family:'Playfair Display',serif;color:#3e2723;font-size:22px;font-weight:700;margin:0;" id="bid-count-display">4</p>
+      </div>
+      <div style="text-align:center;">
+        <p style="font-family:'DM Sans',sans-serif;color:#a1887f;font-size:11px;text-transform:uppercase;letter-spacing:.5px;margin:0 0 4px;font-weight:600;">Lowest Bid</p>
+        <p style="font-family:'Playfair Display',serif;color:#6b8f5e;font-size:22px;font-weight:700;margin:0;" id="lowest-bid-display">$380</p>
+      </div>
+    </div>
+
+    <!-- Sort chips -->
+    <div style="display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap;align-items:center;">
+      <span style="font-family:'DM Sans',sans-serif;color:rgba(255,250,245,.6);font-size:13px;">Sort:</span>
+      <button class="sort-chip active" onclick="setSort('bid-low',this)">Price: Low to High</button>
+      <button class="sort-chip" onclick="setSort('bid-high',this)">Price: High to Low</button>
+      <button class="sort-chip" onclick="setSort('newest',this)">Most Recent</button>
+      <button class="sort-chip" onclick="setSort('rating',this)">Highest Rated</button>
+      <button class="sort-chip" onclick="setSort('timeline',this)">Fastest Timeline</button>
+    </div>
+
+    <!-- Bids List -->
+    <div id="bids-container" style="display:flex;flex-direction:column;gap:14px;"></div>
+
+    <!-- Empty / Accepted -->
+    <div id="accepted-msg" style="display:none;text-align:center;padding:40px;background:rgba(107,143,94,.1);border:1px solid rgba(107,143,94,.2);border-radius:20px;">
+      <div style="font-size:48px;margin-bottom:12px;">🎉</div>
+      <h2 style="font-family:'Playfair Display',serif;color:#fffaf5;font-size:24px;font-weight:600;margin-bottom:8px;">Bid Accepted!</h2>
+      <p style="font-family:'DM Sans',sans-serif;color:rgba(255,250,245,.7);font-size:15px;margin-bottom:20px;" id="accepted-text">Your baker has been notified and will be in touch soon.</p>
+      <a href="main_page_portfolio.html"><button style="padding:12px 24px;background:linear-gradient(135deg,#c8956c,#a67c52);color:#fffaf5;border:none;border-radius:12px;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;cursor:pointer;">Back to My Requests</button></a>
+    </div>
+  </div>
+</div>
+
+<script>
+  const bids = [
+    { id:1, name:"Sarah's Creations",   emoji:'👩‍🍳', rating:4.9, reviews:127, price:420, timeline:'2 weeks',  timeMs: Date.now() - 2*3600000,  notes:"I specialize in floral fondant designs. Happy to use fresh flowers!", timelineDays:14 },
+    { id:2, name:"Artisan Bakery Co",   emoji:'🎂',  rating:4.8, reviews:89,  price:450, timeline:'3 weeks',  timeMs: Date.now() - 5*3600000,  notes:"Established bakery with 10 years in wedding cakes.",              timelineDays:21 },
+    { id:3, name:"The Cake Studio",     emoji:'🧁',  rating:5.0, reviews:156, price:520, timeline:'1 week',   timeMs: Date.now() - 1*3600000,  notes:"Premium tier, fastest turnaround in Singapore.",                  timelineDays:7  },
+    { id:4, name:"Homemade Delights",   emoji:'🍰',  rating:4.7, reviews:64,  price:380, timeline:'10 days',  timeMs: Date.now() - 24*3600000, notes:"Home baker, personal touch, all organic ingredients.",            timelineDays:10 },
+  ];
+
+  let currentSort = 'bid-low';
+  let sorted = [...bids];
+
+  function setSort(sort, el) {
+    currentSort = sort;
+    document.querySelectorAll('.sort-chip').forEach(c => c.classList.remove('active'));
+    el.classList.add('active');
+    applySort();
+  }
+
+  function applySort() {
+    sorted = [...bids];
+    if (currentSort === 'bid-low')   sorted.sort((a,b) => a.price - b.price);
+    if (currentSort === 'bid-high')  sorted.sort((a,b) => b.price - a.price);
+    if (currentSort === 'newest')    sorted.sort((a,b) => b.timeMs - a.timeMs);
+    if (currentSort === 'rating')    sorted.sort((a,b) => b.rating - a.rating);
+    if (currentSort === 'timeline')  sorted.sort((a,b) => a.timelineDays - b.timelineDays);
+    renderBids();
+  }
+
+  function timeAgo(ms) {
+    const diff = Date.now() - ms;
+    const h = Math.floor(diff / 3600000);
+    if (h < 1) return 'just now';
+    if (h < 24) return `${h} hr ago`;
+    return `${Math.floor(h/24)} day(s) ago`;
+  }
+
+  function renderBids() {
+    const container = document.getElementById('bids-container');
+    container.innerHTML = '';
+    const lowestPrice = Math.min(...sorted.map(b => b.price));
+
+    sorted.forEach((bid, i) => {
+      const isWinner = bid.price === lowestPrice;
+      const stars = '★'.repeat(Math.round(bid.rating)) + '☆'.repeat(5 - Math.round(bid.rating));
+      const card = document.createElement('div');
+      card.className = `bid-card slide-up ${isWinner ? 'winner' : ''}`;
+      card.style.animationDelay = `${i * 0.08}s`;
+
+      card.innerHTML = `
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;">
+          <!-- Baker Info -->
+          <div style="display:flex;gap:14px;align-items:center;flex:1;min-width:200px;">
+            <div style="width:54px;height:54px;border-radius:50%;background:linear-gradient(135deg,#c8956c,#a67c52);display:flex;align-items:center;justify-content:center;font-size:26px;flex-shrink:0;box-shadow:0 4px 12px rgba(200,149,108,.2);">${bid.emoji}</div>
+            <div>
+              <div style="display:flex;align-items:center;gap:8px;">
+                <p style="font-family:'Playfair Display',serif;color:#3e2723;font-size:17px;font-weight:600;margin:0;">${bid.name}</p>
+                ${isWinner ? '<span style="background:rgba(107,143,94,.15);color:#4a7c3f;padding:3px 8px;border-radius:6px;font-size:10px;font-weight:700;font-family:\'DM Sans\',sans-serif;border:1px solid rgba(107,143,94,.25);">Best Value</span>' : ''}
+              </div>
+              <p style="font-family:'DM Sans',sans-serif;color:#f5a623;font-size:13px;margin:4px 0 2px;">${stars.slice(0,Math.round(bid.rating))} <span style="color:#a1887f;">${bid.rating} (${bid.reviews} reviews)</span></p>
+              <p style="font-family:'DM Sans',sans-serif;color:#a1887f;font-size:12px;margin:0;">Submitted ${timeAgo(bid.timeMs)}</p>
+            </div>
+          </div>
+
+          <!-- Bid Stats -->
+          <div style="display:flex;gap:24px;align-items:center;flex-wrap:wrap;">
+            <div style="text-align:center;">
+              <p style="font-family:'DM Sans',sans-serif;color:#a1887f;font-size:10px;text-transform:uppercase;letter-spacing:.5px;margin:0 0 4px;font-weight:600;">Bid Price</p>
+              <p style="font-family:'Playfair Display',serif;color:${isWinner ? '#6b8f5e' : '#3e2723'};font-size:22px;font-weight:700;margin:0;">$${bid.price}</p>
+            </div>
+            <div style="text-align:center;">
+              <p style="font-family:'DM Sans',sans-serif;color:#a1887f;font-size:10px;text-transform:uppercase;letter-spacing:.5px;margin:0 0 4px;font-weight:600;">Timeline</p>
+              <p style="font-family:'Playfair Display',serif;color:#3e2723;font-size:18px;font-weight:600;margin:0;">${bid.timeline}</p>
+            </div>
+          </div>
+
+          <!-- Actions -->
+          <div style="display:flex;gap:8px;align-items:center;flex-shrink:0;">
+            <button class="decline-btn" onclick="handleDecline(${bid.id})">Decline</button>
+            <button class="accept-btn" onclick="handleAccept(${bid.id},'${bid.name}')">Accept Bid</button>
+          </div>
+        </div>
+
+        ${bid.notes ? `
+        <div style="margin-top:14px;padding:12px 14px;background:rgba(200,149,108,.05);border-radius:10px;border-left:3px solid rgba(200,149,108,.3);">
+          <p style="font-family:'DM Sans',sans-serif;color:#5c3d2e;font-size:13px;margin:0;line-height:1.5;">💬 "${bid.notes}"</p>
+        </div>` : ''}
+      `;
+      container.appendChild(card);
+    });
+  }
+
+  function handleAccept(id, name) {
+    if (!confirm(`Accept the bid from ${name}?`)) return;
+    document.getElementById('bids-container').style.display = 'none';
+    document.getElementById('accepted-text').textContent = `${name} has been notified and will contact you shortly. 🎂`;
+    document.getElementById('accepted-msg').style.display = 'block';
+  }
+
+  function handleDecline(id) {
+    const idx = bids.findIndex(b => b.id === id);
+    if (idx > -1) bids.splice(idx, 1);
+    document.getElementById('bid-count-display').textContent = bids.length;
+    document.getElementById('lowest-bid-display').textContent = bids.length ? '$' + Math.min(...bids.map(b=>b.price)) : '—';
+    applySort();
+  }
+
+  document.addEventListener('DOMContentLoaded', () => applySort());
+</script>
+</body>
+</html>

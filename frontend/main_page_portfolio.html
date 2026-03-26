@@ -1,0 +1,222 @@
+<!doctype html>
+<html lang="en" class="h-full">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Smart Bakers — My Requests</title>
+  <script src="master_controller.js"></script>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    html,body{height:100%;margin:0;}*{box-sizing:border-box;}
+    .flour-bg{background:radial-gradient(ellipse at 20% 50%,rgba(255,248,240,.15) 0%,transparent 50%),radial-gradient(ellipse at 80% 20%,rgba(210,180,140,.1) 0%,transparent 40%),linear-gradient(135deg,#3e2723 0%,#4e342e 25%,#5d4037 50%,#4e342e 75%,#3e2723 100%);}
+    .flour-dust{position:fixed;inset:0;opacity:.1;pointer-events:none;background-image:radial-gradient(circle at 15% 25%,#fff 1px,transparent 1px),radial-gradient(circle at 45% 15%,#fff .5px,transparent .5px),radial-gradient(circle at 75% 35%,#fff 1.5px,transparent 1.5px),radial-gradient(circle at 85% 75%,#fff 1px,transparent 1px);}
+    .glass{background:rgba(255,252,247,.92);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,.6);}
+    .inp{padding:10px 14px;border:1px solid rgba(200,149,108,.3);border-radius:10px;font-family:'DM Sans',sans-serif;color:#3e2723;font-size:13px;background:rgba(255,255,255,.7);outline:none;transition:all .2s;width:100%;}
+    .inp:focus{border-color:#c8956c;box-shadow:0 0 0 3px rgba(200,149,108,.1);}
+    .request-card{background:rgba(255,252,247,.96);border:1px solid rgba(200,149,108,.18);border-radius:20px;overflow:hidden;transition:all .35s cubic-bezier(.34,1.56,.64,1);}
+    .request-card:hover{transform:translateY(-6px);box-shadow:0 20px 40px rgba(62,39,35,.14);border-color:rgba(200,149,108,.4);}
+    .badge{display:inline-block;padding:4px 10px;border-radius:8px;font-size:11px;font-weight:600;background:rgba(200,149,108,.12);color:#8d6e63;border:1px solid rgba(200,149,108,.2);font-family:'DM Sans',sans-serif;}
+    .price-tag{background:linear-gradient(135deg,#c8956c,#a67c52);color:#fffaf5;font-weight:700;border-radius:10px;padding:6px 12px;font-size:14px;font-family:'DM Sans',sans-serif;}
+    .btn-primary{padding:10px 20px;background:linear-gradient(135deg,#c8956c,#a67c52);color:#fffaf5;border:none;border-radius:10px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:all .2s;}
+    .btn-primary:hover{transform:translateY(-1px);box-shadow:0 6px 16px rgba(200,149,108,.3);}
+    .btn-secondary{padding:10px 20px;background:transparent;color:#c8956c;border:1px solid rgba(200,149,108,.4);border-radius:10px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:all .2s;}
+    .btn-secondary:hover{background:rgba(200,149,108,.08);}
+    .status-open{background:rgba(107,143,94,.12);color:#4a7c3f;border:1px solid rgba(107,143,94,.25);}
+    .status-pending{background:rgba(224,138,46,.12);color:#b06a00;border:1px solid rgba(224,138,46,.25);}
+    .status-closed{background:rgba(200,149,108,.12);color:#8d6e63;border:1px solid rgba(200,149,108,.25);}
+    .bid-pill{display:flex;align-items:center;gap:6px;padding:6px 10px;border-radius:8px;background:rgba(200,149,108,.06);border:1px solid rgba(200,149,108,.15);}
+    @keyframes slideUp{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
+    .slide-up{animation:slideUp .5s ease-out both;}
+    .nav-btn{background:none;border:none;color:#3e2723;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer;padding:8px 14px;border-radius:10px;transition:background .2s;}
+    .nav-btn:hover{background:rgba(200,149,108,.1);}
+    .nav-btn.active{background:rgba(200,149,108,.15);color:#c8956c;}
+    .sort-chip{padding:6px 14px;border-radius:20px;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;cursor:pointer;border:1px solid rgba(200,149,108,.3);transition:all .2s;background:transparent;color:#8d6e63;}
+    .sort-chip.active{background:linear-gradient(135deg,#c8956c,#a67c52);color:#fffaf5;border-color:transparent;}
+  </style>
+</head>
+<body class="h-full">
+<div class="flour-bg h-full w-full flex flex-col relative overflow-auto">
+  <div class="flour-dust"></div>
+
+  <!-- Nav -->
+  <nav data-sb-nav class="glass sticky top-0 z-20 shadow-sm" style="padding:16px 24px;display:flex;align-items:center;justify-content:space-between;position:relative;"></nav>
+
+  <!-- Page Content -->
+  <div class="flex-1 w-full max-w-6xl mx-auto px-6 py-8 relative z-10">
+
+    <!-- Page Header -->
+    <div style="margin-bottom:28px;display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+      <div>
+        <h1 style="font-family:'Playfair Display',serif;color:#fffaf5;font-size:34px;font-weight:700;margin:0 0 6px;">My Baking Requests</h1>
+        <p style="font-family:'DM Sans',sans-serif;color:rgba(255,250,245,.6);font-size:15px;margin:0;">Track bids and manage your orders</p>
+      </div>
+      <a href="posting_baking_request.html">
+        <button class="btn-primary" style="font-size:14px;padding:12px 22px;">+ Post New Request</button>
+      </a>
+    </div>
+
+    <!-- Filters Bar -->
+    <div class="glass rounded-2xl p-4 mb-6" style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;">
+      <input class="inp" id="search-inp" placeholder="Search requests…" style="flex:1;min-width:180px;" oninput="applyFilters()">
+      <select class="inp" id="variety-filter" style="width:auto;flex-shrink:0;" onchange="applyFilters()">
+        <option value="">All Varieties</option>
+        <option value="wedding-cake">Wedding Cake</option>
+        <option value="birthday-cake">Birthday Cake</option>
+        <option value="bread">Bread</option>
+        <option value="cookies">Cookies</option>
+        <option value="pastry">Pastry</option>
+        <option value="cupcakes">Cupcakes</option>
+      </select>
+      <select class="inp" id="status-filter" style="width:auto;flex-shrink:0;" onchange="applyFilters()">
+        <option value="">All Status</option>
+        <option value="open">Open</option>
+        <option value="pending">Pending</option>
+        <option value="closed">Closed</option>
+      </select>
+    </div>
+
+    <!-- Sort Chips -->
+    <div style="display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap;">
+      <span style="font-family:'DM Sans',sans-serif;color:rgba(255,250,245,.6);font-size:13px;align-self:center;">Sort by:</span>
+      <button class="sort-chip active" data-sort="newest" onclick="setSort('newest',this)">Newest</button>
+      <button class="sort-chip" data-sort="bid-price-low" onclick="setSort('bid-price-low',this)">Lowest Bid</button>
+      <button class="sort-chip" data-sort="bid-price-high" onclick="setSort('bid-price-high',this)">Highest Bid</button>
+      <button class="sort-chip" data-sort="bid-count" onclick="setSort('bid-count',this)">Most Bids</button>
+      <button class="sort-chip" data-sort="deadline" onclick="setSort('deadline',this)">Deadline Soon</button>
+      <button class="sort-chip" data-sort="budget-high" onclick="setSort('budget-high',this)">Budget: High</button>
+    </div>
+
+    <!-- Cards -->
+    <div id="cards-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:20px;"></div>
+
+    <p id="empty-msg" style="display:none;text-align:center;padding:60px;font-family:'DM Sans',sans-serif;color:rgba(255,250,245,.5);font-size:16px;">No requests match your filters.</p>
+  </div>
+</div>
+
+<script>
+  let currentSort = 'newest';
+
+  const mockRequests = [
+    { id:1, title:'Elegant Wedding Cake', variety:'wedding-cake', emoji:'🎂', budget:450, deadline:'2024-04-15', status:'open',    bids:[ {price:380,time:'2 hr ago'},{price:420,time:'5 hr ago'},{price:450,time:'1 day ago'} ], description:'Three-tier with delicate floral design' },
+    { id:2, title:'Chocolate Birthday Cake', variety:'birthday-cake', emoji:'🍰', budget:80, deadline:'2024-03-20', status:'pending', bids:[ {price:75,time:'3 hr ago'},{price:80,time:'1 day ago'} ], description:'Rich chocolate ganache for a 10-year-old' },
+    { id:3, title:'Sourdough Bread Loaves', variety:'bread', emoji:'🍞', budget:45, deadline:'2024-03-18', status:'open',    bids:[], description:'Traditional crusty sourdough x4' },
+    { id:4, title:'Rainbow Assorted Cookies', variety:'cookies', emoji:'🍪', budget:120, deadline:'2024-03-22', status:'closed',  bids:[ {price:100,time:'2 days ago'},{price:115,time:'3 days ago'},{price:90,time:'4 days ago'},{price:120,time:'5 days ago'} ], description:'Colorful sugar cookies for school event' },
+    { id:5, title:'Classic French Croissants', variety:'pastry', emoji:'🥐', budget:60, deadline:'2024-04-01', status:'open',    bids:[ {price:55,time:'6 hr ago'} ], description:'Handmade buttery croissants x12' },
+    { id:6, title:'Vegan Cupcakes Batch', variety:'cupcakes', emoji:'🧁', budget:95, deadline:'2024-03-30', status:'pending', bids:[ {price:85,time:'1 hr ago'},{price:90,time:'8 hr ago'} ], description:'24 vegan vanilla cupcakes with frosting' },
+  ];
+
+  let filtered = [...mockRequests];
+
+  function setSort(sort, el) {
+    currentSort = sort;
+    document.querySelectorAll('.sort-chip').forEach(c => c.classList.remove('active'));
+    el.classList.add('active');
+    applyFilters();
+  }
+
+  function applyFilters() {
+    const search  = document.getElementById('search-inp').value.toLowerCase();
+    const variety = document.getElementById('variety-filter').value;
+    const status  = document.getElementById('status-filter').value;
+
+    filtered = mockRequests.filter(r => {
+      const matchSearch  = r.title.toLowerCase().includes(search) || r.description.toLowerCase().includes(search);
+      const matchVariety = !variety || r.variety === variety;
+      const matchStatus  = !status  || r.status === status;
+      return matchSearch && matchVariety && matchStatus;
+    });
+
+    // Sort
+    if (currentSort === 'newest')         filtered.sort((a,b) => b.id - a.id);
+    if (currentSort === 'bid-price-low')  filtered.sort((a,b) => minBid(a) - minBid(b));
+    if (currentSort === 'bid-price-high') filtered.sort((a,b) => maxBid(b) - maxBid(a));
+    if (currentSort === 'bid-count')      filtered.sort((a,b) => b.bids.length - a.bids.length);
+    if (currentSort === 'deadline')       filtered.sort((a,b) => new Date(a.deadline) - new Date(b.deadline));
+    if (currentSort === 'budget-high')    filtered.sort((a,b) => b.budget - a.budget);
+
+    renderCards();
+  }
+
+  function minBid(r) { return r.bids.length ? Math.min(...r.bids.map(b=>b.price)) : Infinity; }
+  function maxBid(r) { return r.bids.length ? Math.max(...r.bids.map(b=>b.price)) : 0; }
+
+  function renderCards() {
+    const grid = document.getElementById('cards-grid');
+    const empty = document.getElementById('empty-msg');
+    grid.innerHTML = '';
+    if (!filtered.length) { empty.style.display='block'; return; }
+    empty.style.display = 'none';
+
+    filtered.forEach((r, i) => {
+      const card = document.createElement('div');
+      card.className = 'request-card slide-up';
+      card.style.animationDelay = `${i * 0.07}s`;
+
+      const statusClass = { open:'status-open', pending:'status-pending', closed:'status-closed' }[r.status] || '';
+      const lowestBid  = r.bids.length ? Math.min(...r.bids.map(b=>b.price)) : null;
+      const bidsHtml   = r.bids.slice(0,3).map(b => `
+        <div class="bid-pill">
+          <span style="font-family:'DM Sans',sans-serif;color:#3e2723;font-size:13px;font-weight:600;">$${b.price}</span>
+          <span style="font-family:'DM Sans',sans-serif;color:#a1887f;font-size:11px;">${b.time}</span>
+        </div>`).join('');
+
+      card.innerHTML = `
+        <div style="padding:20px;">
+          <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px;">
+            <div style="width:52px;height:52px;border-radius:14px;background:rgba(200,149,108,.1);display:flex;align-items:center;justify-content:center;font-size:28px;flex-shrink:0;">${r.emoji}</div>
+            <div style="flex:1;min-width:0;">
+              <h3 style="font-family:'Playfair Display',serif;color:#3e2723;font-size:17px;font-weight:600;margin:0 0 4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${r.title}</h3>
+              <p style="font-family:'DM Sans',sans-serif;color:#a1887f;font-size:12px;margin:0;">${r.description}</p>
+            </div>
+          </div>
+
+          <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;">
+            <span class="badge">${r.variety.replace('-',' ')}</span>
+            <span class="badge ${statusClass}">${r.status.charAt(0).toUpperCase()+r.status.slice(1)}</span>
+          </div>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:14px;padding:12px;background:rgba(200,149,108,.04);border-radius:12px;border:1px solid rgba(200,149,108,.08);">
+            <div style="text-align:center;">
+              <p style="font-family:'DM Sans',sans-serif;color:#a1887f;font-size:10px;text-transform:uppercase;letter-spacing:.5px;margin:0 0 3px;font-weight:600;">Budget</p>
+              <p style="font-family:'Playfair Display',serif;color:#3e2723;font-size:16px;font-weight:600;margin:0;">$${r.budget}</p>
+            </div>
+            <div style="text-align:center;">
+              <p style="font-family:'DM Sans',sans-serif;color:#a1887f;font-size:10px;text-transform:uppercase;letter-spacing:.5px;margin:0 0 3px;font-weight:600;">Bids</p>
+              <p style="font-family:'Playfair Display',serif;color:#3e2723;font-size:16px;font-weight:600;margin:0;">${r.bids.length}</p>
+            </div>
+            <div style="text-align:center;">
+              <p style="font-family:'DM Sans',sans-serif;color:#a1887f;font-size:10px;text-transform:uppercase;letter-spacing:.5px;margin:0 0 3px;font-weight:600;">Low Bid</p>
+              <p style="font-family:'Playfair Display',serif;color:${lowestBid ? '#6b8f5e' : '#a1887f'};font-size:16px;font-weight:600;margin:0;">${lowestBid ? '$'+lowestBid : '—'}</p>
+            </div>
+          </div>
+
+          ${r.bids.length ? `
+          <div style="margin-bottom:14px;">
+            <p style="font-family:'DM Sans',sans-serif;color:#a1887f;font-size:11px;text-transform:uppercase;letter-spacing:.5px;margin:0 0 8px;font-weight:600;">Recent Bids</p>
+            <div style="display:flex;flex-wrap:wrap;gap:6px;">${bidsHtml}</div>
+          </div>` : `
+          <div style="text-align:center;padding:14px;margin-bottom:14px;background:rgba(200,149,108,.04);border-radius:12px;border:1px dashed rgba(200,149,108,.2);">
+            <p style="font-family:'DM Sans',sans-serif;color:#a1887f;font-size:13px;margin:0;">No bids yet — be the first!</p>
+          </div>`}
+
+          <div style="display:flex;gap:8px;">
+            <a href="customer_bid_accept.html" style="flex:1;">
+              <button class="btn-primary" style="width:100%;">View Bids (${r.bids.length})</button>
+            </a>
+            <button class="btn-secondary">⋯</button>
+          </div>
+        </div>
+        <div style="padding:10px 20px;background:rgba(200,149,108,.04);border-top:1px solid rgba(200,149,108,.08);display:flex;justify-content:space-between;align-items:center;">
+          <span style="font-family:'DM Sans',sans-serif;color:#a1887f;font-size:11px;">📅 Due ${new Date(r.deadline).toLocaleDateString('en-US',{month:'short',day:'numeric'})}</span>
+          <span style="font-family:'DM Sans',sans-serif;color:#a1887f;font-size:11px;">Posted ${r.id * 2} days ago</span>
+        </div>
+      `;
+      grid.appendChild(card);
+    });
+  }
+
+  document.addEventListener('DOMContentLoaded', () => applyFilters());
+</script>
+</body>
+</html>

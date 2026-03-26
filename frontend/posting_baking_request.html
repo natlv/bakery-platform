@@ -1,0 +1,224 @@
+<!doctype html>
+<html lang="en" class="h-full">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Smart Bakers — Post a Request</title>
+  <script src="master_controller.js"></script>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    html,body{height:100%;margin:0;}*{box-sizing:border-box;}
+    .flour-bg{background:radial-gradient(ellipse at 20% 50%,rgba(255,248,240,.15) 0%,transparent 50%),linear-gradient(135deg,#3e2723 0%,#4e342e 25%,#5d4037 50%,#4e342e 75%,#3e2723 100%);}
+    .flour-dust{position:fixed;inset:0;opacity:.1;pointer-events:none;background-image:radial-gradient(circle at 15% 25%,#fff 1px,transparent 1px),radial-gradient(circle at 75% 35%,#fff 1.5px,transparent 1.5px);}
+    .glass{background:rgba(255,252,247,.92);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,.6);}
+    .inp{width:100%;padding:12px 16px;border:1px solid rgba(200,149,108,.3);border-radius:12px;font-family:'DM Sans',sans-serif;color:#3e2723;font-size:14px;background:rgba(255,255,255,.7);outline:none;transition:all .2s;}
+    .inp:focus{border-color:#c8956c;box-shadow:0 0 0 3px rgba(200,149,108,.1);}
+    .inp::placeholder{color:#b8a090;}
+    .submit-btn{width:100%;padding:14px;background:linear-gradient(135deg,#c8956c,#a67c52);color:#fffaf5;border:none;border-radius:14px;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:600;cursor:pointer;transition:all .3s cubic-bezier(.34,1.56,.64,1);box-shadow:0 8px 20px rgba(200,149,108,.25);}
+    .submit-btn:hover{transform:translateY(-2px);box-shadow:0 12px 28px rgba(200,149,108,.35);}
+    .submit-btn:disabled{opacity:.6;cursor:not-allowed;transform:none;}
+    .upload-zone{border:2px dashed rgba(200,149,108,.35);border-radius:16px;padding:32px;text-align:center;cursor:pointer;transition:all .2s;background:rgba(200,149,108,.03);}
+    .upload-zone:hover,.upload-zone.drag-over{border-color:#c8956c;background:rgba(200,149,108,.07);}
+    .diet-chip{padding:7px 14px;border-radius:9px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer;border:1px solid rgba(200,149,108,.3);background:transparent;color:#8d6e63;transition:all .2s;}
+    .diet-chip.selected{background:rgba(107,143,94,.12);color:#4a7c3f;border-color:rgba(107,143,94,.3);}
+    @keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+    .fu1{animation:fadeUp .5s ease-out .05s both}
+    .fu2{animation:fadeUp .5s ease-out .12s both}
+    .fu3{animation:fadeUp .5s ease-out .2s both}
+    .fu4{animation:fadeUp .5s ease-out .28s both}
+    label{font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;color:#3e2723;display:block;margin-bottom:6px;}
+  </style>
+</head>
+<body class="h-full">
+<div class="flour-bg h-full w-full flex flex-col relative overflow-auto">
+  <div class="flour-dust"></div>
+
+  <!-- Nav -->
+  <nav data-sb-nav class="glass sticky top-0 z-20 shadow-sm" style="padding:16px 24px;display:flex;align-items:center;justify-content:space-between;position:relative;"></nav>
+
+  <div class="flex-1 w-full flex items-start justify-center px-4 py-10 relative z-10">
+    <div class="glass fu1 rounded-3xl shadow-2xl w-full max-w-2xl p-10">
+
+      <div class="fu1 mb-8">
+        <h1 style="font-family:'Playfair Display',serif;color:#3e2723;font-size:32px;font-weight:700;margin:0 0 6px;">Post a Baking Request</h1>
+        <p style="font-family:'DM Sans',sans-serif;color:#8d6e63;font-size:14px;margin:0;">Share your vision and connect with talented local bakers</p>
+      </div>
+
+      <div id="form-content">
+
+        <!-- Cake Title -->
+        <div class="fu2" style="margin-bottom:20px;">
+          <label for="cake-title">Cake / Bake Title *</label>
+          <input class="inp" type="text" id="cake-title" placeholder="e.g. Three-tier Garden Wedding Cake" required>
+        </div>
+
+        <!-- Variety + Dietary -->
+        <div class="fu2" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;">
+          <div>
+            <label for="bake-variety">Bake Variety *</label>
+            <select class="inp" id="bake-variety" required>
+              <option value="">Select variety</option>
+              <option value="bread">Bread</option>
+              <option value="birthday-cake">Birthday Cake</option>
+              <option value="wedding-cake">Wedding Cake</option>
+              <option value="anniversary-cake">Anniversary Cake</option>
+              <option value="occasion-cake">Occasion Cake</option>
+              <option value="cookies">Cookies</option>
+              <option value="biscuit">Biscuit</option>
+              <option value="pastry">Pastry</option>
+              <option value="cupcakes">Cupcakes</option>
+            </select>
+          </div>
+          <div>
+            <label for="servings">Servings / Quantity</label>
+            <input class="inp" type="number" id="servings" placeholder="e.g. 50" min="1">
+          </div>
+        </div>
+
+        <!-- Dietary -->
+        <div class="fu2" style="margin-bottom:20px;">
+          <label>Dietary Requirements</label>
+          <div style="display:flex;flex-wrap:wrap;gap:8px;" id="dietary-chips">
+            <button type="button" class="diet-chip" onclick="toggleDiet(this,'Vegan')">Vegan</button>
+            <button type="button" class="diet-chip" onclick="toggleDiet(this,'Non-Vegan')">Non-Vegan</button>
+            <button type="button" class="diet-chip" onclick="toggleDiet(this,'Gluten Free')">Gluten Free</button>
+            <button type="button" class="diet-chip" onclick="toggleDiet(this,'Halal')">Halal</button>
+            <button type="button" class="diet-chip" onclick="toggleDiet(this,'Non-Halal')">Non-Halal</button>
+            <button type="button" class="diet-chip" onclick="toggleDiet(this,'Sugar Control')">Sugar Control</button>
+            <button type="button" class="diet-chip" onclick="toggleDiet(this,'Dairy Free')">Dairy Free</button>
+            <button type="button" class="diet-chip" onclick="toggleDiet(this,'Nut Free')">Nut Free</button>
+          </div>
+        </div>
+
+        <!-- Budget + Deadline -->
+        <div class="fu3" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;">
+          <div>
+            <label for="budget">Budget (SGD $) *</label>
+            <div style="position:relative;">
+              <span style="position:absolute;left:14px;top:50%;transform:translateY(-50%);font-family:'DM Sans',sans-serif;color:#8d6e63;font-weight:600;">$</span>
+              <input class="inp" type="number" id="budget" placeholder="500" min="0" step="1" style="padding-left:28px;" required>
+            </div>
+          </div>
+          <div>
+            <label for="deadline">Deadline Date *</label>
+            <input class="inp" type="date" id="deadline" required>
+          </div>
+        </div>
+
+        <!-- Description -->
+        <div class="fu3" style="margin-bottom:20px;">
+          <label for="description">Description & Special Requests *</label>
+          <textarea class="inp" id="description" placeholder="Describe your vision in detail — flavors, colours, decorations, themes, number of tiers, etc." style="min-height:110px;resize:vertical;font-family:'DM Sans',sans-serif;" required></textarea>
+        </div>
+
+        <!-- Upload -->
+        <div class="fu3" style="margin-bottom:28px;">
+          <label>Inspiration Photos (optional)</label>
+          <div class="upload-zone" id="upload-zone" onclick="document.getElementById('file-input').click()">
+            <div style="font-size:36px;margin-bottom:10px;">📷</div>
+            <p style="font-family:'DM Sans',sans-serif;color:#3e2723;font-size:15px;font-weight:500;margin:0 0 4px;">Drag & drop photos here</p>
+            <p style="font-family:'DM Sans',sans-serif;color:#a1887f;font-size:13px;margin:0;">or click to browse · JPG, PNG, WEBP</p>
+            <input type="file" id="file-input" multiple accept="image/*" style="display:none;">
+          </div>
+          <div id="file-preview" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;"></div>
+        </div>
+
+        <!-- Error -->
+        <div id="form-err" style="display:none;padding:12px 16px;background:rgba(229,57,53,.08);border:1px solid rgba(229,57,53,.2);border-radius:10px;margin-bottom:16px;">
+          <p style="font-family:'DM Sans',sans-serif;font-size:13px;color:#c62828;margin:0;" id="form-err-msg">Please fill in all required fields.</p>
+        </div>
+
+        <button class="submit-btn fu4" id="submit-btn" onclick="handleSubmit()">Post My Request 🎂</button>
+      </div>
+
+      <!-- Success -->
+      <div id="success-section" style="display:none;text-align:center;padding:20px 0;">
+        <div style="font-size:64px;margin-bottom:16px;">✨</div>
+        <h2 style="font-family:'Playfair Display',serif;color:#3e2723;font-size:28px;font-weight:700;margin:0 0 8px;">Request Posted!</h2>
+        <p style="font-family:'DM Sans',sans-serif;color:#8d6e63;font-size:15px;line-height:1.6;margin:0 0 28px;">Talented bakers can now see your request and submit their proposals. You'll be notified when bids arrive!</p>
+        <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
+          <a href="main_page_portfolio.html"><button style="padding:13px 24px;background:linear-gradient(135deg,#c8956c,#a67c52);color:#fffaf5;border:none;border-radius:12px;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;cursor:pointer;">View My Requests</button></a>
+          <button onclick="resetForm()" style="padding:13px 24px;background:transparent;color:#c8956c;border:1px solid rgba(200,149,108,.4);border-radius:12px;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;cursor:pointer;">Post Another</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+  const selectedDiet = new Set();
+
+  function toggleDiet(btn, label) {
+    if (selectedDiet.has(label)) {
+      selectedDiet.delete(label);
+      btn.classList.remove('selected');
+    } else {
+      selectedDiet.add(label);
+      btn.classList.add('selected');
+    }
+  }
+
+  // Upload
+  const zone  = document.getElementById('upload-zone');
+  const input = document.getElementById('file-input');
+  const prev  = document.getElementById('file-preview');
+
+  zone.addEventListener('dragover',  e => { e.preventDefault(); zone.classList.add('drag-over'); });
+  zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+  zone.addEventListener('drop', e => { e.preventDefault(); zone.classList.remove('drag-over'); handleFiles(e.dataTransfer.files); });
+  input.addEventListener('change', () => handleFiles(input.files));
+
+  function handleFiles(files) {
+    prev.innerHTML = '';
+    Array.from(files).forEach(f => {
+      const reader = new FileReader();
+      reader.onload = e => {
+        const img = document.createElement('div');
+        img.style.cssText = 'width:80px;height:80px;border-radius:10px;overflow:hidden;border:1px solid rgba(200,149,108,.2);';
+        img.innerHTML = `<img src="${e.target.result}" style="width:100%;height:100%;object-fit:cover;">`;
+        prev.appendChild(img);
+      };
+      reader.readAsDataURL(f);
+    });
+  }
+
+  function handleSubmit() {
+    const title  = document.getElementById('cake-title').value.trim();
+    const variety = document.getElementById('bake-variety').value;
+    const budget = document.getElementById('budget').value;
+    const deadline = document.getElementById('deadline').value;
+    const desc   = document.getElementById('description').value.trim();
+    const errEl  = document.getElementById('form-err');
+    const errMsg = document.getElementById('form-err-msg');
+    errEl.style.display = 'none';
+
+    if (!title)   { errMsg.textContent = 'Please enter a title for your request.'; errEl.style.display='block'; return; }
+    if (!variety) { errMsg.textContent = 'Please select a bake variety.'; errEl.style.display='block'; return; }
+    if (!budget || parseFloat(budget) <= 0) { errMsg.textContent = 'Please enter a valid budget.'; errEl.style.display='block'; return; }
+    if (!deadline) { errMsg.textContent = 'Please select a deadline.'; errEl.style.display='block'; return; }
+    if (!desc)    { errMsg.textContent = 'Please describe your request.'; errEl.style.display='block'; return; }
+
+    // In production: POST /api/requests { title, variety, dietary:[...selectedDiet], budget, deadline, description }
+    const btn = document.getElementById('submit-btn');
+    btn.textContent = 'Posting…';
+    btn.disabled = true;
+
+    setTimeout(() => {
+      document.getElementById('form-content').style.display = 'none';
+      document.getElementById('success-section').style.display = 'block';
+    }, 800);
+  }
+
+  function resetForm() {
+    document.getElementById('form-content').style.display = 'block';
+    document.getElementById('success-section').style.display = 'none';
+    document.getElementById('submit-btn').textContent = 'Post My Request 🎂';
+    document.getElementById('submit-btn').disabled = false;
+    document.querySelectorAll('.diet-chip').forEach(c => c.classList.remove('selected'));
+    selectedDiet.clear();
+  }
+</script>
+</body>
+</html>
