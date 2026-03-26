@@ -131,6 +131,10 @@
     function handleContinue() {
       const cta = document.getElementById('cta-btn');
       const role = isBaker ? 'Baker' : 'Customer';
+    // Use the controller to save the session
+    SmartBakers.session.save('UID-' + Date.now(), role, 'Guest1'); 
+    // Use the controller to find the right home page
+    SmartBakers.auth.goHome();
       cta.textContent = `Welcome, ${role}! ✨`;
       cta.style.background = '#6b8f5e';
       setTimeout(() => {
