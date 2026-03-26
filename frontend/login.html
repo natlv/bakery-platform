@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="en" class="h-full">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Smart Bakers — Sign In</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    html,body{height:100%;margin:0;}
+    *{box-sizing:border-box;}
+    .flour-bg{
+      background:
+        radial-gradient(ellipse at 20% 50%,rgba(255,248,240,.15) 0%,transparent 50%),
+        radial-gradient(ellipse at 80% 20%,rgba(210,180,140,.10) 0%,transparent 40%),
+        linear-gradient(135deg,#3d2b1f 0%,#5c3d2e 30%,#4a3228 60%,#6b4636 100%);
+    }
+    .flour-dust{position:fixed;inset:0;opacity:.1;pointer-events:none;
+      background-image:
+        radial-gradient(circle at 12% 20%,#fff 1px,transparent 1px),
+        radial-gradient(circle at 40% 70%,#fff .8px,transparent .8px),
+        radial-gradient(circle at 70% 35%,#fff 1.5px,transparent 1.5px),
+        radial-gradient(circle at 85% 80%,#fff 1px,transparent 1px),
+        radial-gradient(circle at 55% 10%,#fff .6px,transparent .6px);
+    }
+    .glass{background:rgba(255,252,247,.93);backdrop-filter:blur(24px);border:1px solid rgba(255,255,255,.6);}
+    .inp{width:100%;padding:12px 16px;border:1px solid rgba(200,149,108,.3);border-radius:12px;font-family:'DM Sans',sans-serif;color:#3d2b1f;font-size:14px;background:rgba(255,255,255,.7);outline:none;transition:all .2s;}
+    .inp:focus{border-color:#c8956c;box-shadow:0 0 0 3px rgba(200,149,108,.12);background:#fff;}
+    .btn-primary{width:100%;padding:14px;background:linear-gradient(135deg,#b47846,#8d5e30);color:#fffaf5;border:none;border-radius:14px;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:600;cursor:pointer;transition:all .3s cubic-bezier(.34,1.56,.64,1);box-shadow:0 8px 20px rgba(180,120,70,.25);}
+    .btn-primary:hover{transform:translateY(-2px);box-shadow:0 12px 28px rgba(180,120,70,.35);}
+    .btn-primary:active{transform:translateY(0);}
+    .toggle-track{transition:background .3s;}
+    .toggle-thumb{transition:transform .35s cubic-bezier(.34,1.56,.64,1);}
+    @keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+    .a1{animation:fadeUp .6s ease-out .05s both}
+    .a2{animation:fadeUp .6s ease-out .15s both}
+    .a3{animation:fadeUp .6s ease-out .25s both}
+    .a4{animation:fadeUp .6s ease-out .35s both}
+    .a5{animation:fadeUp .6s ease-out .45s both}
+    .tab-btn{padding:8px 20px;border-radius:10px;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;cursor:pointer;border:none;transition:all .2s;}
+    .tab-active{background:linear-gradient(135deg,#b47846,#8d5e30);color:#fffaf5;}
+    .tab-inactive{background:transparent;color:#a1887f;}
+    .err{color:#e53935;font-family:'DM Sans',sans-serif;font-size:12px;margin-top:4px;display:none;}
+  </style>
+</head>
+<body class="h-full">
+<main class="flour-bg relative w-full h-full flex items-center justify-center overflow-auto p-4" style="position:relative;">
+  <div class="flour-dust" style="position:fixed;inset:0;pointer-events:none;opacity:.1;"></div>
+
+  <div class="glass a1 relative z-10 rounded-3xl shadow-2xl px-8 py-10 w-full max-w-md mx-auto">
+
+    <!-- Logo -->
+    <div class="a1 flex items-center justify-center gap-3 mb-2">
+      <div style="width:44px;height:44px;background:linear-gradient(135deg,#b47846,#8d5e30);border-radius:14px;display:flex;align-items:center;justify-content:center;">
+        <span style="font-size:22px;">🍞</span>
+      </div>
+    </div>
+
+    <h1 class="a2 text-center" style="font-family:'Playfair Display',serif;font-size:30px;font-weight:700;color:#3d2b1f;margin:8px 0 4px;">Smart Bakers</h1>
+    <p class="a2 text-center" style="font-family:'DM Sans',sans-serif;font-size:14px;color:#8b7355;margin-bottom:28px;">Fresh from the oven, straight to your door</p>
+
+    <!-- Role Toggle -->
+    <div class="a3 flex justify-center gap-3 mb-6">
+      <button class="tab-btn tab-active" id="tab-baker" onclick="switchRole('Baker')">🧑‍🍳 I'm a Baker</button>
+      <button class="tab-btn tab-inactive" id="tab-customer" onclick="switchRole('Customer')">🛒 I'm a Customer</button>
+    </div>
+
+    <!-- Role Description -->
+    <div class="a3 rounded-2xl p-4 mb-6" style="background:rgba(180,120,70,.08);" id="role-desc">
+      <p style="font-family:'DM Sans',sans-serif;font-size:13px;color:#5c3d2e;line-height:1.6;margin:0;text-align:center;">🧑‍🍳 Ready to share your creations? List your baked goods and reach customers nearby.</p>
+    </div>
+
+    <!-- Login Form -->
+    <div class="a4" id="login-section">
+      <div style="margin-bottom:16px;">
+        <label style="font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;color:#3d2b1f;display:block;margin-bottom:6px;">Email Address</label>
+        <input class="inp" type="email" id="login-email" placeholder="you@example.com" autocomplete="email">
+        <p class="err" id="email-err">Please enter a valid email.</p>
+      </div>
+      <div style="margin-bottom:8px;">
+        <label style="font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;color:#3d2b1f;display:block;margin-bottom:6px;">Password</label>
+        <div style="position:relative;">
+          <input class="inp" type="password" id="login-password" placeholder="••••••••" autocomplete="current-password" style="padding-right:44px;">
+          <button onclick="togglePwd()" style="position:absolute;right:14px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:#a1887f;font-size:16px;" title="Show/hide password">👁</button>
+        </div>
+        <p class="err" id="pwd-err">Password must be at least 6 characters.</p>
+      </div>
+
+      <div style="text-align:right;margin-bottom:20px;">
+        <a href="forgot_password.html" style="font-family:'DM Sans',sans-serif;font-size:12px;color:#b47846;text-decoration:none;font-weight:600;">Forgot password?</a>
+      </div>
+
+      <div id="login-err" style="display:none;padding:12px;background:rgba(229,57,53,.08);border:1px solid rgba(229,57,53,.2);border-radius:10px;margin-bottom:16px;">
+        <p style="font-family:'DM Sans',sans-serif;font-size:13px;color:#c62828;margin:0;text-align:center;" id="login-err-msg">Invalid email or password.</p>
+      </div>
+
+      <button class="btn-primary" id="cta-btn" onclick="handleLogin()">Sign In as Baker</button>
+    </div>
+
+    <!-- Demo note -->
+    <p class="a5 text-center mt-5" style="font-family:'DM Sans',sans-serif;font-size:11px;color:#b0a08a;">
+      Demo: use any email + password (6+ chars) &nbsp;·&nbsp; 
+      <a href="forgot_password.html" style="color:#b47846;text-decoration:none;">Reset password</a>
+    </p>
+  </div>
+</main>
+
+<script>
+  let currentRole = 'Baker';
+
+  function switchRole(role) {
+    currentRole = role;
+    const baker = role === 'Baker';
+    document.getElementById('tab-baker').className = 'tab-btn ' + (baker ? 'tab-active' : 'tab-inactive');
+    document.getElementById('tab-customer').className = 'tab-btn ' + (!baker ? 'tab-active' : 'tab-inactive');
+    document.getElementById('role-desc').querySelector('p').innerHTML = baker
+      ? '🧑‍🍳 Ready to share your creations? List your baked goods and reach customers nearby.'
+      : '🛒 Discover fresh pastries, breads & treats from talented local bakers near you.';
+    document.getElementById('cta-btn').textContent = `Sign In as ${role}`;
+  }
+
+  function togglePwd() {
+    const pwd = document.getElementById('login-password');
+    pwd.type = pwd.type === 'password' ? 'text' : 'password';
+  }
+
+  function handleLogin() {
+    const email = document.getElementById('login-email').value.trim();
+    const pwd   = document.getElementById('login-password').value;
+    let valid = true;
+
+    document.getElementById('email-err').style.display = 'none';
+    document.getElementById('pwd-err').style.display = 'none';
+    document.getElementById('login-err').style.display = 'none';
+
+    if (!email || !email.includes('@')) {
+      document.getElementById('email-err').style.display = 'block'; valid = false;
+    }
+    if (pwd.length < 6) {
+      document.getElementById('pwd-err').style.display = 'block'; valid = false;
+    }
+    if (!valid) return;
+
+    // --- DEMO login (replace with real API call for SQL DB) ---
+    // In production: POST /api/auth/login { email, password, role }
+    const btn = document.getElementById('cta-btn');
+    btn.textContent = 'Signing in…';
+    btn.disabled = true;
+
+    setTimeout(() => {
+      // Simulate successful login
+      const userId = 'user_' + Date.now();
+      const name   = email.split('@')[0].replace(/[^a-zA-Z]/g,' ').trim() || 'User';
+      const capitalName = name.charAt(0).toUpperCase() + name.slice(1);
+
+      // Save session
+      localStorage.setItem('sb_user_id', userId);
+      localStorage.setItem('sb_role', currentRole);
+      localStorage.setItem('sb_username', capitalName);
+      localStorage.setItem('sb_email', email);
+
+      // Route by role
+      window.location.href = currentRole === 'Baker'
+        ? 'bakery_marketplace_dashboard_search.html'
+        : 'main_page_portfolio.html';
+    }, 900);
+  }
+
+  // Allow Enter key
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') handleLogin();
+  });
+</script>
+</body>
+</html>
