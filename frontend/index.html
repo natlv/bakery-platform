@@ -1,358 +1,38 @@
-<!DOCTYPE html>
-<html>
+<!doctype html>
+<html lang="en">
 <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Smart Bakers</title>
+  <meta http-equiv="refresh" content="0; url=login.html">
+  <style>
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      background:
+        radial-gradient(circle at top left, rgba(255, 248, 240, 0.18), transparent 35%),
+        linear-gradient(135deg, #3e2723, #5d4037 55%, #4e342e);
+      color: #fffaf5;
+      font-family: Georgia, serif;
+    }
 
-<title>Bakery Marketplace</title>
+    main {
+      text-align: center;
+      padding: 32px;
+    }
 
-<style>
-
-body{
-font-family: Arial;
-background:#f5f5f5;
-margin:40px;
-}
-
-#app{
-max-width:1100px;
-margin:auto;
-}
-
-h1{
-text-align:center;
-}
-
-.container{
-display:grid;
-grid-template-columns:1fr 1fr;
-gap:30px;
-margin-bottom:40px;
-}
-
-.card{
-background:white;
-padding:25px;
-border-radius:10px;
-box-shadow:0 2px 10px rgba(0,0,0,0.1);
-margin-bottom:30px;
-}
-
-.request{
-border-bottom:1px solid #eee;
-padding:10px 0;
-}
-
-.request:last-child{
-border-bottom:none;
-}
-
-img{
-max-width:200px;
-display:block;
-margin-top:10px;
-}
-
-input,button{
-margin:6px 0;
-padding:8px;
-width:100%;
-box-sizing:border-box;
-}
-
-button{
-background:#ff7b54;
-border:none;
-color:white;
-cursor:pointer;
-}
-
-button:hover{
-background:#ff5e30;
-}
-
-.error{
-color:red;
-font-weight:bold;
-}
-
-.debug{
-background:#eee;
-padding:10px;
-margin-top:10px;
-font-size:12px;
-}
-
-</style>
-
+    a {
+      color: #ffd9b5;
+    }
+  </style>
 </head>
-
 <body>
-
-<div id="app"></div>
-
-<script src="https://unpkg.com/react@18/umd/react.development.js"></script>
-<script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
-<script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
-
-<script type="text/babel">
-
-const API = "https://smart-bakers.com"
-
-function App(){
-
-const [requests,setRequests] = React.useState([])
-const [bids,setBids] = React.useState([])
-const [selectedRequest,setSelectedRequest] = React.useState(null)
-const [loading,setLoading] = React.useState(false)
-const [error,setError] = React.useState(null)
-const [debug,setDebug] = React.useState(null)
-
-async function loadRequests(){
-
-setLoading(true)
-setError(null)
-
-try{
-
-const res = await fetch(API + "/requests")
-
-const data = await res.json()
-
-setDebug(JSON.stringify(data,null,2))
-
-if(!Array.isArray(data)){
-setError("Backend did not return an array")
-return
-}
-
-setRequests(data)
-
-}catch(e){
-
-setError(e.toString())
-
-}
-
-setLoading(false)
-
-}
-
-React.useEffect(()=>{
-loadRequests()
-},[])
-
-
-async function createRequest(e){
-
-e.preventDefault()
-
-const form = new FormData(e.target)
-
-await fetch(API+"/requests",{
-method:"POST",
-body:form
-})
-
-e.target.reset()
-
-loadRequests()
-
-}
-
-
-async function submitBid(e){
-
-e.preventDefault()
-
-const form = new FormData(e.target)
-
-await fetch(API+"/bids",{
-method:"POST",
-body:form
-})
-
-alert("Bid submitted")
-
-}
-
-
-async function loadBids(requestId){
-
-setSelectedRequest(requestId)
-
-const res = await fetch(API+"/bids/"+requestId)
-
-const data = await res.json()
-
-setBids(data)
-
-}
-
-
-async function acceptBid(requestId,bidId){
-
-const form = new FormData()
-
-form.append("request_id",requestId)
-form.append("bid_id",bidId)
-
-await fetch(API+"/accept-bid",{
-method:"POST",
-body:form
-})
-
-alert("Bid accepted")
-
-loadRequests()
-
-}
-
-
-return(
-
-<div>
-
-<h1>Smart Bakers : Bakery Request Marketplace</h1>
-
-<div className="container">
-
-<div className="card">
-
-<h2>Create Request</h2>
-
-<form onSubmit={createRequest}>
-
-<input name="customer_id" defaultValue="1"/>
-
-<input name="title" placeholder="Title"/>
-
-<input name="description" placeholder="Description"/>
-
-<input name="budget" placeholder="Budget"/>
-
-<input name="deadline" placeholder="Deadline"/>
-
-<input type="file" name="file"/>
-
-<button>Create Request</button>
-
-</form>
-
-</div>
-
-
-<div className="card">
-
-<h2>Submit Bid</h2>
-
-<form onSubmit={submitBid}>
-
-<input name="request_id" placeholder="Request ID"/>
-
-<input name="baker_id" defaultValue="1"/>
-
-<input name="price" placeholder="Price"/>
-
-<input name="timeline" placeholder="Timeline"/>
-
-<input name="notes" placeholder="Notes"/>
-
-<button>Submit Bid</button>
-
-</form>
-
-</div>
-
-</div>
-
-
-<div className="card">
-
-<h2>Open Requests</h2>
-
-<button onClick={loadRequests}>Refresh Requests</button>
-
-{loading && <p>Loading requests...</p>}
-
-{error && <p className="error">{error}</p>}
-
-{requests.length === 0 && !loading && <p>No requests found.</p>}
-
-{requests.map(r => (
-
-<div className="request" key={r[0]}>
-
-<b>ID:</b> {r[0]} <br/>
-
-<b>Title:</b> {r[1]} <br/>
-
-<b>Description:</b> {r[2]} <br/>
-
-<b>Budget:</b> {r[3]} <br/>
-
-<b>Status:</b> {r[5]} <br/>
-
-{r[6] && <img src={r[6]} />}
-
-<button onClick={()=>loadBids(r[0])}>View Bids</button>
-
-</div>
-
-))}
-
-</div>
-
-
-{selectedRequest && (
-
-<div className="card">
-
-<h2>Bids for Request {selectedRequest}</h2>
-
-{bids.length===0 && <p>No bids yet.</p>}
-
-{bids.map(b => (
-
-<div className="request" key={b[0]}>
-
-<b>Bid ID:</b> {b[0]} <br/>
-
-<b>Baker:</b> {b[1]} <br/>
-
-<b>Price:</b> {b[2]} <br/>
-
-<b>Timeline:</b> {b[3]} <br/>
-
-<b>Notes:</b> {b[4]} <br/>
-
-<button onClick={()=>acceptBid(selectedRequest,b[0])}>
-Accept Bid
-</button>
-
-</div>
-
-))}
-
-</div>
-
-)}
-
-<div className="debug">
-
-<b>Debug API response:</b>
-
-<pre>{debug}</pre>
-
-</div>
-
-</div>
-
-)
-
-}
-
-ReactDOM.createRoot(document.getElementById("app")).render(<App/>)
-
-</script>
-
+  <main>
+    <h1>Smart Bakers</h1>
+    <p>Redirecting to the app...</p>
+    <p><a href="login.html">Open login</a></p>
+  </main>
 </body>
 </html>

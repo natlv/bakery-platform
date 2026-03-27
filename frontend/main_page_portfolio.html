@@ -25,6 +25,7 @@
     .status-open{background:rgba(107,143,94,.12);color:#4a7c3f;border:1px solid rgba(107,143,94,.25);}
     .status-pending{background:rgba(224,138,46,.12);color:#b06a00;border:1px solid rgba(224,138,46,.25);}
     .status-closed{background:rgba(200,149,108,.12);color:#8d6e63;border:1px solid rgba(200,149,108,.25);}
+    .status-accepted{background:rgba(107,143,94,.12);color:#4a7c3f;border:1px solid rgba(107,143,94,.25);}
     .bid-pill{display:flex;align-items:center;gap:6px;padding:6px 10px;border-radius:8px;background:rgba(200,149,108,.06);border:1px solid rgba(200,149,108,.15);}
     @keyframes slideUp{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
     .slide-up{animation:slideUp .5s ease-out both;}
@@ -71,8 +72,7 @@
       <select class="inp" id="status-filter" style="width:auto;flex-shrink:0;" onchange="applyFilters()">
         <option value="">All Status</option>
         <option value="open">Open</option>
-        <option value="pending">Pending</option>
-        <option value="closed">Closed</option>
+        <option value="accepted">Accepted</option>
       </select>
     </div>
 
@@ -96,17 +96,8 @@
 
 <script>
   let currentSort = 'newest';
-
-  const mockRequests = [
-    { id:1, title:'Elegant Wedding Cake', variety:'wedding-cake', emoji:'🎂', budget:450, deadline:'2024-04-15', status:'open',    bids:[ {price:380,time:'2 hr ago'},{price:420,time:'5 hr ago'},{price:450,time:'1 day ago'} ], description:'Three-tier with delicate floral design' },
-    { id:2, title:'Chocolate Birthday Cake', variety:'birthday-cake', emoji:'🍰', budget:80, deadline:'2024-03-20', status:'pending', bids:[ {price:75,time:'3 hr ago'},{price:80,time:'1 day ago'} ], description:'Rich chocolate ganache for a 10-year-old' },
-    { id:3, title:'Sourdough Bread Loaves', variety:'bread', emoji:'🍞', budget:45, deadline:'2024-03-18', status:'open',    bids:[], description:'Traditional crusty sourdough x4' },
-    { id:4, title:'Rainbow Assorted Cookies', variety:'cookies', emoji:'🍪', budget:120, deadline:'2024-03-22', status:'closed',  bids:[ {price:100,time:'2 days ago'},{price:115,time:'3 days ago'},{price:90,time:'4 days ago'},{price:120,time:'5 days ago'} ], description:'Colorful sugar cookies for school event' },
-    { id:5, title:'Classic French Croissants', variety:'pastry', emoji:'🥐', budget:60, deadline:'2024-04-01', status:'open',    bids:[ {price:55,time:'6 hr ago'} ], description:'Handmade buttery croissants x12' },
-    { id:6, title:'Vegan Cupcakes Batch', variety:'cupcakes', emoji:'🧁', budget:95, deadline:'2024-03-30', status:'pending', bids:[ {price:85,time:'1 hr ago'},{price:90,time:'8 hr ago'} ], description:'24 vegan vanilla cupcakes with frosting' },
-  ];
-
-  let filtered = [...mockRequests];
+  let allRequests = [];
+  let filtered = [];
 
   function setSort(sort, el) {
     currentSort = sort;
@@ -115,108 +106,167 @@
     applyFilters();
   }
 
+  async function loadRequests() {
+    const grid = document.getElementById('cards-grid');
+    const user = SmartBakers.session.get();
+    grid.innerHTML = '<div class="glass rounded-2xl p-6" style="grid-column:1 / -1;text-align:center;font-family:\'DM Sans\',sans-serif;color:#8d6e63;">Loading your requests...</div>';
+
+    try {
+      let requests = await SmartBakers.api.getRequests({
+        customerId: user.numericId,
+        includeAllStatuses: true,
+      });
+
+      const ownedIds = new Set(SmartBakers.requests.ownedIds().map(value => Number(value)));
+      if ((!requests.length || requests.some(request => request.customer_id == null)) && ownedIds.size) {
+        const fallbackRequests = await SmartBakers.api.getRequests({ includeAllStatuses: true });
+        requests = fallbackRequests.filter(request => ownedIds.has(Number(request.request_id)));
+      }
+
+      allRequests = await Promise.all(
+        requests.map(async (request) => {
+          const bids = await SmartBakers.api.getBids(request.request_id).catch(() => []);
+          const prices = bids.map(bid => Number(bid.price)).filter(Number.isFinite);
+          return {
+            ...request,
+            bids,
+            bid_count: Number.isFinite(request.bid_count) ? request.bid_count : bids.length,
+            lowest_bid: Number.isFinite(request.lowest_bid) ? request.lowest_bid : (prices.length ? Math.min(...prices) : null),
+            highest_bid: prices.length ? Math.max(...prices) : null,
+          };
+        })
+      );
+
+      applyFilters();
+    } catch (error) {
+      grid.innerHTML = `<div class="glass rounded-2xl p-6" style="grid-column:1 / -1;text-align:center;font-family:'DM Sans',sans-serif;color:#c62828;">${SmartBakers.utils.escHtml(error.message || 'Could not load your requests.')}</div>`;
+    }
+  }
+
   function applyFilters() {
     const search  = document.getElementById('search-inp').value.toLowerCase();
     const variety = document.getElementById('variety-filter').value;
     const status  = document.getElementById('status-filter').value;
 
-    filtered = mockRequests.filter(r => {
-      const matchSearch  = r.title.toLowerCase().includes(search) || r.description.toLowerCase().includes(search);
-      const matchVariety = !variety || r.variety === variety;
-      const matchStatus  = !status  || r.status === status;
+    filtered = allRequests.filter(request => {
+      const matchSearch  = request.title.toLowerCase().includes(search) || request.details.toLowerCase().includes(search);
+      const matchVariety = !variety || request.variety === variety;
+      const matchStatus  = !status || request.status === status;
       return matchSearch && matchVariety && matchStatus;
     });
 
-    // Sort
-    if (currentSort === 'newest')         filtered.sort((a,b) => b.id - a.id);
-    if (currentSort === 'bid-price-low')  filtered.sort((a,b) => minBid(a) - minBid(b));
-    if (currentSort === 'bid-price-high') filtered.sort((a,b) => maxBid(b) - maxBid(a));
-    if (currentSort === 'bid-count')      filtered.sort((a,b) => b.bids.length - a.bids.length);
-    if (currentSort === 'deadline')       filtered.sort((a,b) => new Date(a.deadline) - new Date(b.deadline));
-    if (currentSort === 'budget-high')    filtered.sort((a,b) => b.budget - a.budget);
+    if (currentSort === 'newest')         filtered.sort((a,b) => new Date(b.created_at || 0) - new Date(a.created_at || 0) || b.request_id - a.request_id);
+    if (currentSort === 'bid-price-low')  filtered.sort((a,b) => valueOrInfinity(a.lowest_bid) - valueOrInfinity(b.lowest_bid));
+    if (currentSort === 'bid-price-high') filtered.sort((a,b) => valueOrZero(b.highest_bid) - valueOrZero(a.highest_bid));
+    if (currentSort === 'bid-count')      filtered.sort((a,b) => valueOrZero(b.bid_count) - valueOrZero(a.bid_count));
+    if (currentSort === 'deadline')       filtered.sort((a,b) => new Date(a.deadline || 0) - new Date(b.deadline || 0));
+    if (currentSort === 'budget-high')    filtered.sort((a,b) => valueOrZero(b.budget) - valueOrZero(a.budget));
 
     renderCards();
   }
 
-  function minBid(r) { return r.bids.length ? Math.min(...r.bids.map(b=>b.price)) : Infinity; }
-  function maxBid(r) { return r.bids.length ? Math.max(...r.bids.map(b=>b.price)) : 0; }
+  function valueOrInfinity(value) {
+    return Number.isFinite(Number(value)) ? Number(value) : Number.POSITIVE_INFINITY;
+  }
+
+  function valueOrZero(value) {
+    return Number.isFinite(Number(value)) ? Number(value) : 0;
+  }
 
   function renderCards() {
     const grid = document.getElementById('cards-grid');
     const empty = document.getElementById('empty-msg');
     grid.innerHTML = '';
-    if (!filtered.length) { empty.style.display='block'; return; }
+
+    if (!filtered.length) {
+      empty.style.display = 'block';
+      empty.textContent = allRequests.length ? 'No requests match your filters.' : 'You have not posted any requests yet.';
+      return;
+    }
+
     empty.style.display = 'none';
 
-    filtered.forEach((r, i) => {
+    filtered.forEach((request, index) => {
       const card = document.createElement('div');
       card.className = 'request-card slide-up';
-      card.style.animationDelay = `${i * 0.07}s`;
+      card.style.animationDelay = `${index * 0.07}s`;
 
-      const statusClass = { open:'status-open', pending:'status-pending', closed:'status-closed' }[r.status] || '';
-      const lowestBid  = r.bids.length ? Math.min(...r.bids.map(b=>b.price)) : null;
-      const bidsHtml   = r.bids.slice(0,3).map(b => `
+      const statusClass = {
+        open: 'status-open',
+        pending: 'status-pending',
+        accepted: 'status-accepted',
+        closed: 'status-closed',
+      }[request.status] || 'status-closed';
+
+      const bidsHtml = request.bids.slice(0, 3).map(bid => `
         <div class="bid-pill">
-          <span style="font-family:'DM Sans',sans-serif;color:#3e2723;font-size:13px;font-weight:600;">$${b.price}</span>
-          <span style="font-family:'DM Sans',sans-serif;color:#a1887f;font-size:11px;">${b.time}</span>
+          <span style="font-family:'DM Sans',sans-serif;color:#3e2723;font-size:13px;font-weight:600;">${SmartBakers.utils.formatCurrency(bid.price)}</span>
+          <span style="font-family:'DM Sans',sans-serif;color:#a1887f;font-size:11px;">${SmartBakers.utils.escHtml(SmartBakers.utils.timeAgo(bid.created_at))}</span>
         </div>`).join('');
+
+      const requestUrl = SmartBakers.routing.requestUrl('customer_bid_accept.html', request.request_id);
 
       card.innerHTML = `
         <div style="padding:20px;">
           <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px;">
-            <div style="width:52px;height:52px;border-radius:14px;background:rgba(200,149,108,.1);display:flex;align-items:center;justify-content:center;font-size:28px;flex-shrink:0;">${r.emoji}</div>
+            <div style="width:52px;height:52px;border-radius:14px;background:rgba(200,149,108,.1);display:flex;align-items:center;justify-content:center;font-size:28px;flex-shrink:0;overflow:hidden;">
+              ${request.image_url ? `<img src="${SmartBakers.utils.escHtml(request.image_url)}" alt="" style="width:100%;height:100%;object-fit:cover;">` : request.emoji}
+            </div>
             <div style="flex:1;min-width:0;">
-              <h3 style="font-family:'Playfair Display',serif;color:#3e2723;font-size:17px;font-weight:600;margin:0 0 4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${r.title}</h3>
-              <p style="font-family:'DM Sans',sans-serif;color:#a1887f;font-size:12px;margin:0;">${r.description}</p>
+              <h3 style="font-family:'Playfair Display',serif;color:#3e2723;font-size:17px;font-weight:600;margin:0 0 4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${SmartBakers.utils.escHtml(request.title)}</h3>
+              <p style="font-family:'DM Sans',sans-serif;color:#a1887f;font-size:12px;margin:0;">${SmartBakers.utils.escHtml(request.details)}</p>
             </div>
           </div>
 
           <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;">
-            <span class="badge">${r.variety.replace('-',' ')}</span>
-            <span class="badge ${statusClass}">${r.status.charAt(0).toUpperCase()+r.status.slice(1)}</span>
+            <span class="badge">${SmartBakers.utils.escHtml(SmartBakers.utils.sentenceCase(request.variety))}</span>
+            <span class="badge ${statusClass}">${SmartBakers.utils.escHtml(SmartBakers.utils.sentenceCase(request.status))}</span>
+            ${request.dietary.slice(0, 2).map(item => `<span class="badge">${SmartBakers.utils.escHtml(item)}</span>`).join('')}
           </div>
 
           <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:14px;padding:12px;background:rgba(200,149,108,.04);border-radius:12px;border:1px solid rgba(200,149,108,.08);">
             <div style="text-align:center;">
               <p style="font-family:'DM Sans',sans-serif;color:#a1887f;font-size:10px;text-transform:uppercase;letter-spacing:.5px;margin:0 0 3px;font-weight:600;">Budget</p>
-              <p style="font-family:'Playfair Display',serif;color:#3e2723;font-size:16px;font-weight:600;margin:0;">$${r.budget}</p>
+              <p style="font-family:'Playfair Display',serif;color:#3e2723;font-size:16px;font-weight:600;margin:0;">${SmartBakers.utils.formatCurrency(request.budget)}</p>
             </div>
             <div style="text-align:center;">
               <p style="font-family:'DM Sans',sans-serif;color:#a1887f;font-size:10px;text-transform:uppercase;letter-spacing:.5px;margin:0 0 3px;font-weight:600;">Bids</p>
-              <p style="font-family:'Playfair Display',serif;color:#3e2723;font-size:16px;font-weight:600;margin:0;">${r.bids.length}</p>
+              <p style="font-family:'Playfair Display',serif;color:#3e2723;font-size:16px;font-weight:600;margin:0;">${valueOrZero(request.bid_count)}</p>
             </div>
             <div style="text-align:center;">
               <p style="font-family:'DM Sans',sans-serif;color:#a1887f;font-size:10px;text-transform:uppercase;letter-spacing:.5px;margin:0 0 3px;font-weight:600;">Low Bid</p>
-              <p style="font-family:'Playfair Display',serif;color:${lowestBid ? '#6b8f5e' : '#a1887f'};font-size:16px;font-weight:600;margin:0;">${lowestBid ? '$'+lowestBid : '—'}</p>
+              <p style="font-family:'Playfair Display',serif;color:${request.lowest_bid ? '#6b8f5e' : '#a1887f'};font-size:16px;font-weight:600;margin:0;">${request.lowest_bid ? SmartBakers.utils.formatCurrency(request.lowest_bid) : '—'}</p>
             </div>
           </div>
 
-          ${r.bids.length ? `
+          ${request.bids.length ? `
           <div style="margin-bottom:14px;">
             <p style="font-family:'DM Sans',sans-serif;color:#a1887f;font-size:11px;text-transform:uppercase;letter-spacing:.5px;margin:0 0 8px;font-weight:600;">Recent Bids</p>
             <div style="display:flex;flex-wrap:wrap;gap:6px;">${bidsHtml}</div>
           </div>` : `
           <div style="text-align:center;padding:14px;margin-bottom:14px;background:rgba(200,149,108,.04);border-radius:12px;border:1px dashed rgba(200,149,108,.2);">
-            <p style="font-family:'DM Sans',sans-serif;color:#a1887f;font-size:13px;margin:0;">No bids yet — be the first!</p>
+            <p style="font-family:'DM Sans',sans-serif;color:#a1887f;font-size:13px;margin:0;">No bids yet.</p>
           </div>`}
 
           <div style="display:flex;gap:8px;">
-            <a href="customer_bid_accept.html" style="flex:1;">
-              <button class="btn-primary" style="width:100%;">View Bids (${r.bids.length})</button>
+            <a href="${requestUrl}" style="flex:1;" onclick="SmartBakers.routing.setActiveRequest(${request.request_id})">
+              <button class="btn-primary" style="width:100%;">View Bids (${valueOrZero(request.bid_count)})</button>
             </a>
-            <button class="btn-secondary">⋯</button>
+            <a href="posting_baking_request.html">
+              <button class="btn-secondary">Post New</button>
+            </a>
           </div>
         </div>
         <div style="padding:10px 20px;background:rgba(200,149,108,.04);border-top:1px solid rgba(200,149,108,.08);display:flex;justify-content:space-between;align-items:center;">
-          <span style="font-family:'DM Sans',sans-serif;color:#a1887f;font-size:11px;">📅 Due ${new Date(r.deadline).toLocaleDateString('en-US',{month:'short',day:'numeric'})}</span>
-          <span style="font-family:'DM Sans',sans-serif;color:#a1887f;font-size:11px;">Posted ${r.id * 2} days ago</span>
+          <span style="font-family:'DM Sans',sans-serif;color:#a1887f;font-size:11px;">📅 Due ${SmartBakers.utils.formatDate(request.deadline,{month:'short',day:'numeric'})}</span>
+          <span style="font-family:'DM Sans',sans-serif;color:#a1887f;font-size:11px;">Posted ${SmartBakers.utils.escHtml(SmartBakers.utils.timeAgo(request.created_at))}</span>
         </div>
       `;
       grid.appendChild(card);
     });
   }
 
-  document.addEventListener('DOMContentLoaded', () => applyFilters());
+  document.addEventListener('DOMContentLoaded', loadRequests);
 </script>
 </body>
 </html>

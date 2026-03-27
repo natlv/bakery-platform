@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Smart Bakers — Sign In</title>
+  <script src="master_controller.js"></script>
   <script src="https://cdn.tailwindcss.com/3.4.17"></script>
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
   <style>
@@ -153,11 +154,7 @@
       const name   = email.split('@')[0].replace(/[^a-zA-Z]/g,' ').trim() || 'User';
       const capitalName = name.charAt(0).toUpperCase() + name.slice(1);
 
-      // Save session
-      localStorage.setItem('sb_user_id', userId);
-      localStorage.setItem('sb_role', currentRole);
-      localStorage.setItem('sb_username', capitalName);
-      localStorage.setItem('sb_email', email);
+      SmartBakers.session.save(userId, currentRole, capitalName, email);
 
       // Route by role
       window.location.href = currentRole === 'Baker'

@@ -51,41 +51,39 @@
       <!-- LEFT: Request Details -->
       <div class="slide-l" style="flex:1;min-width:0;">
         <div class="panel">
-          <div style="height:200px;display:flex;align-items:center;justify-content:center;font-size:90px;background:linear-gradient(135deg,rgba(200,149,108,.08),rgba(210,180,140,.06));border-radius:16px;margin-bottom:20px;">🎂</div>
+          <div id="request-hero" style="height:200px;display:flex;align-items:center;justify-content:center;font-size:90px;background:linear-gradient(135deg,rgba(200,149,108,.08),rgba(210,180,140,.06));border-radius:16px;margin-bottom:20px;">🎂</div>
 
-          <h1 style="font-family:'Playfair Display',serif;color:#3e2723;font-size:26px;font-weight:700;margin:0 0 12px;">Elegant Wedding Cake</h1>
+          <h1 id="request-title" style="font-family:'Playfair Display',serif;color:#3e2723;font-size:26px;font-weight:700;margin:0 0 12px;">Loading request...</h1>
 
-          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;">
-            <span class="badge">Wedding Cake</span>
-            <span style="background:linear-gradient(135deg,#c8956c,#a67c52);color:#fffaf5;padding:5px 12px;border-radius:9px;font-size:13px;font-weight:700;font-family:'DM Sans',sans-serif;">$450 Budget</span>
+          <div id="request-badges" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;">
+            <span class="badge">Preparing...</span>
           </div>
 
-          <p style="font-family:'DM Sans',sans-serif;color:#8d6e63;font-size:14px;line-height:1.7;margin-bottom:20px;">Three-tier wedding cake with delicate floral design and premium fondant details. Perfect for an intimate garden celebration. Customer prefers fresh flowers for decoration.</p>
+          <p id="request-description" style="font-family:'DM Sans',sans-serif;color:#8d6e63;font-size:14px;line-height:1.7;margin-bottom:20px;">Fetching the latest request details from the marketplace.</p>
 
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;padding:16px;background:rgba(200,149,108,.04);border-radius:14px;border:1px solid rgba(200,149,108,.08);margin-bottom:16px;">
             <div>
               <p style="font-family:'DM Sans',sans-serif;color:#a1887f;font-size:10px;text-transform:uppercase;letter-spacing:.5px;margin:0 0 5px;font-weight:600;">Deadline</p>
-              <p style="font-family:'DM Sans',sans-serif;color:#3e2723;font-size:15px;margin:0;font-weight:600;">April 15, 2024</p>
+              <p id="request-deadline" style="font-family:'DM Sans',sans-serif;color:#3e2723;font-size:15px;margin:0;font-weight:600;">-</p>
             </div>
             <div>
               <p style="font-family:'DM Sans',sans-serif;color:#a1887f;font-size:10px;text-transform:uppercase;letter-spacing:.5px;margin:0 0 5px;font-weight:600;">Current Bids</p>
-              <p style="font-family:'DM Sans',sans-serif;color:#3e2723;font-size:15px;margin:0;font-weight:600;">3 bids · lowest $380</p>
+              <p id="request-bid-summary" style="font-family:'DM Sans',sans-serif;color:#3e2723;font-size:15px;margin:0;font-weight:600;">-</p>
             </div>
             <div>
               <p style="font-family:'DM Sans',sans-serif;color:#a1887f;font-size:10px;text-transform:uppercase;letter-spacing:.5px;margin:0 0 5px;font-weight:600;">Posted By</p>
-              <p style="font-family:'DM Sans',sans-serif;color:#3e2723;font-size:15px;margin:0;font-weight:600;">Emily T.</p>
+              <p id="request-owner" style="font-family:'DM Sans',sans-serif;color:#3e2723;font-size:15px;margin:0;font-weight:600;">-</p>
             </div>
             <div>
               <p style="font-family:'DM Sans',sans-serif;color:#a1887f;font-size:10px;text-transform:uppercase;letter-spacing:.5px;margin:0 0 5px;font-weight:600;">Location</p>
-              <p style="font-family:'DM Sans',sans-serif;color:#3e2723;font-size:15px;margin:0;font-weight:600;">Singapore CBD</p>
+              <p id="request-location" style="font-family:'DM Sans',sans-serif;color:#3e2723;font-size:15px;margin:0;font-weight:600;">Singapore</p>
             </div>
           </div>
 
           <div>
             <p style="font-family:'DM Sans',sans-serif;color:#a1887f;font-size:11px;text-transform:uppercase;letter-spacing:.5px;margin:0 0 8px;font-weight:600;">Dietary Requirements</p>
-            <div style="display:flex;gap:6px;flex-wrap:wrap;">
-              <span class="diet-tag">Vegan</span>
-              <span class="diet-tag">Gluten Free</span>
+            <div id="request-dietary" style="display:flex;gap:6px;flex-wrap:wrap;">
+              <span class="diet-tag">Loading...</span>
             </div>
           </div>
         </div>
@@ -95,7 +93,7 @@
       <div class="slide-r" style="flex:1;min-width:0;">
         <div class="panel" id="bid-form-panel">
           <h2 style="font-family:'Playfair Display',serif;color:#3e2723;font-size:24px;font-weight:700;margin:0 0 6px;">Your Proposal</h2>
-          <p style="font-family:'DM Sans',sans-serif;color:#a1887f;font-size:13px;margin:0 0 24px;">Make it compelling — you're competing with 3 other bakers.</p>
+          <p id="proposal-caption" style="font-family:'DM Sans',sans-serif;color:#a1887f;font-size:13px;margin:0 0 24px;">Loading live bid context...</p>
 
           <div style="display:flex;flex-direction:column;gap:18px;">
 
@@ -167,6 +165,8 @@
 
 <script>
   const selectedSpecialties = new Set();
+  let requestData = null;
+  let bids = [];
 
   function setPrice(val) {
     document.getElementById('bid-price').value = val;
@@ -176,12 +176,26 @@
   function updateValueMsg() {
     const price = parseFloat(document.getElementById('bid-price').value);
     const msg = document.getElementById('value-msg');
-    if (!price) { msg.style.display='none'; return; }
-    const budget = 450, lowest = 380;
+    if (!price || !requestData) { msg.style.display='none'; return; }
+
+    const budget = Number(requestData.budget || 0);
+    const lowest = bids.length ? Math.min(...bids.map(bid => Number(bid.price || 0)).filter(Number.isFinite)) : null;
     let text = '';
-    if (price < lowest) { text = `✨ ${Math.round((1-price/budget)*100)}% below budget — very competitive!`; msg.style.color = '#6b8f5e'; }
-    else if (price <= budget) { text = `👍 Within budget. ${price < budget ? Math.round((1-price/budget)*100)+'% below max.' : 'Matches max budget.'}`; msg.style.color = '#b47846'; }
-    else { text = `⚠️ $${price - budget} above customer's budget.`; msg.style.color = '#e53935'; }
+
+    if (lowest !== null && price < lowest) {
+      text = `Very competitive. You are ${SmartBakers.utils.formatCurrency(lowest - price)} under the lowest live bid.`;
+      msg.style.color = '#6b8f5e';
+    } else if (budget && price <= budget) {
+      text = `Within budget and ready to compete.`;
+      msg.style.color = '#b47846';
+    } else if (budget) {
+      text = `${SmartBakers.utils.formatCurrency(price - budget)} above the customer's stated budget.`;
+      msg.style.color = '#e53935';
+    } else {
+      text = 'Clear pricing helps customers compare bids quickly.';
+      msg.style.color = '#6b8f5e';
+    }
+
     msg.textContent = text;
     msg.style.display = 'block';
   }
@@ -200,7 +214,73 @@
     }
   }
 
-  function handleSubmit() {
+  function renderRequest() {
+    if (!requestData) return;
+
+    document.getElementById('request-hero').innerHTML = requestData.image_url
+      ? `<img src="${SmartBakers.utils.escHtml(requestData.image_url)}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:16px;">`
+      : requestData.emoji;
+    document.getElementById('request-title').textContent = requestData.title;
+    document.getElementById('request-description').textContent = requestData.details;
+    document.getElementById('request-deadline').textContent = SmartBakers.utils.formatDate(requestData.deadline);
+    document.getElementById('request-owner').textContent = `Customer #${requestData.customer_id || '1'}`;
+    document.getElementById('request-location').textContent = 'Singapore';
+
+    const lowestBid = bids.length
+      ? SmartBakers.utils.formatCurrency(Math.min(...bids.map(bid => Number(bid.price || 0)).filter(Number.isFinite)))
+      : 'No bids yet';
+    document.getElementById('request-bid-summary').textContent = bids.length
+      ? `${bids.length} bid${bids.length === 1 ? '' : 's'} · lowest ${lowestBid}`
+      : 'No bids yet';
+
+    document.getElementById('request-badges').innerHTML = `
+      <span class="badge">${SmartBakers.utils.escHtml(SmartBakers.utils.sentenceCase(requestData.variety))}</span>
+      <span style="background:linear-gradient(135deg,#c8956c,#a67c52);color:#fffaf5;padding:5px 12px;border-radius:9px;font-size:13px;font-weight:700;font-family:'DM Sans',sans-serif;">${SmartBakers.utils.formatCurrency(requestData.budget)} Budget</span>
+      ${requestData.servings ? `<span class="badge">${SmartBakers.utils.escHtml(`${requestData.servings} servings`)}</span>` : ''}
+    `;
+
+    document.getElementById('request-dietary').innerHTML = requestData.dietary.length
+      ? requestData.dietary.map(item => `<span class="diet-tag">${SmartBakers.utils.escHtml(item)}</span>`).join('')
+      : '<span class="diet-tag">No dietary notes</span>';
+
+    document.getElementById('proposal-caption').textContent = bids.length
+      ? `You are bidding against ${bids.length} existing proposal${bids.length === 1 ? '' : 's'}.`
+      : 'You could be the first baker to respond to this request.';
+
+    if (requestData.status !== 'open') {
+      document.getElementById('proposal-caption').textContent = 'This request has already been accepted and is no longer open for new bids.';
+      const submitBtn = document.querySelector('#bid-form-panel .submit-btn');
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Request Closed';
+    }
+  }
+
+  async function loadRequestPage() {
+    const requestId = SmartBakers.routing.currentRequestId();
+    if (!requestId) {
+      document.getElementById('request-title').textContent = 'Pick a request from the marketplace first';
+      document.getElementById('proposal-caption').textContent = 'Open this page from a marketplace card so we know which request you want to bid on.';
+      return;
+    }
+
+    try {
+      requestData = await SmartBakers.api.getRequest(requestId);
+    } catch (error) {
+      const fallback = await SmartBakers.api.getRequests({ status: 'open' }).catch(() => []);
+      requestData = fallback.find(item => Number(item.request_id) === Number(requestId)) || null;
+      if (!requestData) {
+        document.getElementById('request-title').textContent = 'Request not found';
+        document.getElementById('proposal-caption').textContent = error.message || 'We could not load that request.';
+        return;
+      }
+    }
+
+    bids = await SmartBakers.api.getBids(requestId).catch(() => []);
+    renderRequest();
+  }
+
+  async function handleSubmit() {
+    const user = SmartBakers.session.get();
     const price    = document.getElementById('bid-price').value;
     const timeline = document.getElementById('bid-timeline').value.trim();
     const notes    = document.getElementById('bid-notes').value.trim();
@@ -208,25 +288,53 @@
     const errMsg   = document.getElementById('form-err-msg');
     errEl.style.display = 'none';
 
+    if (!requestData) { errMsg.textContent = 'Please return to the marketplace and choose a request first.'; errEl.style.display='block'; return; }
     if (!price || parseFloat(price) <= 0) { errMsg.textContent = 'Please enter a valid bid price.'; errEl.style.display='block'; return; }
     if (!timeline) { errMsg.textContent = 'Please provide an estimated timeline.'; errEl.style.display='block'; return; }
     if (!notes) { errMsg.textContent = 'Please write a message to the customer.'; errEl.style.display='block'; return; }
 
-    // Show success
-    document.getElementById('bid-form-panel').style.display = 'none';
-    const summary = document.getElementById('summary-grid');
-    summary.innerHTML = `
-      <div style="text-align:center;">
-        <p style="font-family:'DM Sans',sans-serif;color:#a1887f;font-size:10px;text-transform:uppercase;letter-spacing:.5px;margin:0 0 4px;font-weight:600;">Your Bid</p>
-        <p style="font-family:'Playfair Display',serif;color:#3e2723;font-size:20px;font-weight:700;margin:0;">$${price}</p>
-      </div>
-      <div style="text-align:center;">
-        <p style="font-family:'DM Sans',sans-serif;color:#a1887f;font-size:10px;text-transform:uppercase;letter-spacing:.5px;margin:0 0 4px;font-weight:600;">Timeline</p>
-        <p style="font-family:'Playfair Display',serif;color:#3e2723;font-size:20px;font-weight:700;margin:0;">${timeline}</p>
-      </div>
-    `;
-    document.getElementById('success-panel').style.display = 'block';
+    const submitBtn = document.querySelector('#bid-form-panel .submit-btn');
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Submitting...';
+
+    const formData = new FormData();
+    formData.append('request_id', String(requestData.request_id));
+    formData.append('baker_id', String(user.numericId || 1));
+    formData.append('price', price);
+    formData.append('timeline', timeline);
+    formData.append(
+      'notes',
+      [
+        selectedSpecialties.size ? `Relevant experience: ${Array.from(selectedSpecialties).join(', ')}` : '',
+        notes,
+      ].filter(Boolean).join('\n\n')
+    );
+
+    try {
+      await SmartBakers.api.submitBid(formData);
+      document.getElementById('bid-form-panel').style.display = 'none';
+      const summary = document.getElementById('summary-grid');
+      summary.innerHTML = `
+        <div style="text-align:center;">
+          <p style="font-family:'DM Sans',sans-serif;color:#a1887f;font-size:10px;text-transform:uppercase;letter-spacing:.5px;margin:0 0 4px;font-weight:600;">Your Bid</p>
+          <p style="font-family:'Playfair Display',serif;color:#3e2723;font-size:20px;font-weight:700;margin:0;">${SmartBakers.utils.formatCurrency(price)}</p>
+        </div>
+        <div style="text-align:center;">
+          <p style="font-family:'DM Sans',sans-serif;color:#a1887f;font-size:10px;text-transform:uppercase;letter-spacing:.5px;margin:0 0 4px;font-weight:600;">Timeline</p>
+          <p style="font-family:'Playfair Display',serif;color:#3e2723;font-size:20px;font-weight:700;margin:0;">${SmartBakers.utils.escHtml(timeline)}</p>
+        </div>
+      `;
+      document.getElementById('success-panel').style.display = 'block';
+      SmartBakers.ui.toast('Bid submitted successfully.', 'success');
+    } catch (error) {
+      errMsg.textContent = error.message || 'Could not submit your bid.';
+      errEl.style.display='block';
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Submit My Bid';
+    }
   }
+
+  document.addEventListener('DOMContentLoaded', loadRequestPage);
 </script>
 </body>
 </html>

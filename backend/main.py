@@ -1,4 +1,6 @@
-from fastapi import FastAPI, UploadFile, File, Form
+from typing import Optional
+
+from fastapi import FastAPI, UploadFile, File, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 import shutil
@@ -7,7 +9,10 @@ from bucket_utils import Bucket
 from db import cursor, conn
 
 load_dotenv()
-os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
+
+credentials_path = os.getenv("GOOGLE_APPLICATION_CREDENTIALS") or os.getenv("KEY_PATH")
+if credentials_path:
+    os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = credentials_path
 
 app = FastAPI()
 
@@ -23,6 +28,35 @@ bucket = Bucket()
 
 UPLOAD_DIR = "uploads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
+
+
+def serialize_request_row(row):
+    return {
+        "request_id": row[0],
+        "customer_id": row[1],
+        "title": row[2],
+        "description": row[3],
+        "budget": float(row[4]) if row[4] is not None else None,
+        "deadline": row[5].isoformat() if hasattr(row[5], "isoformat") else row[5],
+        "status": row[6],
+        "image_url": row[7],
+        "accepted_bid_id": row[8],
+        "created_at": row[9].isoformat() if hasattr(row[9], "isoformat") else row[9],
+        "bid_count": row[10] or 0,
+        "lowest_bid": float(row[11]) if row[11] is not None else None,
+    }
+
+
+def serialize_bid_row(row):
+    return {
+        "bid_id": row[0],
+        "request_id": row[1],
+        "baker_id": row[2],
+        "price": float(row[3]) if row[3] is not None else None,
+        "timeline": row[4],
+        "notes": row[5],
+        "created_at": row[6].isoformat() if hasattr(row[6], "isoformat") else row[6],
+    }
 
 @app.get("/")
 def root():
@@ -87,19 +121,98 @@ async def create_request(
     return {"request_id": request_id}
 
 @app.get("/requests")
-def get_requests():
+def get_requests(
+    customer_id: Optional[int] = None,
+    status: Optional[str] = None,
+    include_all_statuses: bool = False,
+):
+    clauses = []
+    params = []
+
+    if customer_id is not None:
+        clauses.append("r.customer_id = %s")
+        params.append(customer_id)
+
+    if status:
+        clauses.append("r.status = %s")
+        params.append(status)
+    elif customer_id is None and not include_all_statuses:
+        clauses.append("r.status = 'open'")
+
+    where_sql = f"WHERE {' AND '.join(clauses)}" if clauses else ""
 
     cursor.execute(
-        """
-        SELECT request_id, title, description, budget, deadline, status, image_url
-        FROM request
-        WHERE status = 'open'
-        ORDER BY created_at DESC
-        """
+        f"""
+        SELECT
+            r.request_id,
+            r.customer_id,
+            r.title,
+            r.description,
+            r.budget,
+            r.deadline,
+            r.status,
+            r.image_url,
+            r.accepted_bid_id,
+            r.created_at,
+            COALESCE(b.bid_count, 0) AS bid_count,
+            b.lowest_bid
+        FROM request r
+        LEFT JOIN (
+            SELECT
+                request_id,
+                COUNT(*) AS bid_count,
+                MIN(price) AS lowest_bid
+            FROM bid
+            GROUP BY request_id
+        ) b
+            ON b.request_id = r.request_id
+        {where_sql}
+        ORDER BY r.created_at DESC
+        """,
+        params,
     )
 
     rows = cursor.fetchall()
-    return rows
+    return [serialize_request_row(row) for row in rows]
+
+
+@app.get("/requests/{request_id}")
+def get_request(request_id: int):
+    cursor.execute(
+        """
+        SELECT
+            r.request_id,
+            r.customer_id,
+            r.title,
+            r.description,
+            r.budget,
+            r.deadline,
+            r.status,
+            r.image_url,
+            r.accepted_bid_id,
+            r.created_at,
+            COALESCE(b.bid_count, 0) AS bid_count,
+            b.lowest_bid
+        FROM request r
+        LEFT JOIN (
+            SELECT
+                request_id,
+                COUNT(*) AS bid_count,
+                MIN(price) AS lowest_bid
+            FROM bid
+            GROUP BY request_id
+        ) b
+            ON b.request_id = r.request_id
+        WHERE r.request_id = %s
+        """,
+        (request_id,),
+    )
+
+    row = cursor.fetchone()
+    if not row:
+        raise HTTPException(status_code=404, detail="Request not found")
+
+    return serialize_request_row(row)
 
 @app.post("/bids")
 def submit_bid(
@@ -109,6 +222,21 @@ def submit_bid(
     timeline: str = Form(...),
     notes: str = Form(None)
 ):
+    cursor.execute(
+        """
+        SELECT status
+        FROM request
+        WHERE request_id = %s
+        """,
+        (request_id,),
+    )
+
+    request_row = cursor.fetchone()
+    if not request_row:
+        raise HTTPException(status_code=404, detail="Request not found")
+
+    if request_row[0] != "open":
+        raise HTTPException(status_code=400, detail="This request is no longer open for bids")
 
     cursor.execute(
         """
@@ -127,7 +255,7 @@ def get_bids(request_id: int):
 
     cursor.execute(
         """
-        SELECT bid_id, baker_id, price, timeline, notes
+        SELECT bid_id, request_id, baker_id, price, timeline, notes, created_at
         FROM bid
         WHERE request_id = %s
         ORDER BY created_at ASC
@@ -136,13 +264,24 @@ def get_bids(request_id: int):
     )
 
     rows = cursor.fetchall()
-    return rows
+    return [serialize_bid_row(row) for row in rows]
 
 @app.post("/accept-bid")
 def accept_bid(
     request_id: int = Form(...),
     bid_id: int = Form(...)
 ):
+    cursor.execute(
+        """
+        SELECT bid_id
+        FROM bid
+        WHERE bid_id = %s AND request_id = %s
+        """,
+        (bid_id, request_id),
+    )
+
+    if not cursor.fetchone():
+        raise HTTPException(status_code=404, detail="Bid not found for this request")
 
     cursor.execute(
         """
@@ -155,5 +294,9 @@ def accept_bid(
 
     conn.commit()
 
-    return {"message": "bid accepted"}
-
+    return {
+        "message": "bid accepted",
+        "request_id": request_id,
+        "accepted_bid_id": bid_id,
+        "status": "accepted",
+    }

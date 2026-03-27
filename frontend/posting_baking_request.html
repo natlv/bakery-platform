@@ -149,6 +149,7 @@
 
 <script>
   const selectedDiet = new Set();
+  let selectedFiles = [];
 
   function toggleDiet(btn, label) {
     if (selectedDiet.has(label)) {
@@ -171,8 +172,9 @@
   input.addEventListener('change', () => handleFiles(input.files));
 
   function handleFiles(files) {
+    selectedFiles = Array.from(files || []);
     prev.innerHTML = '';
-    Array.from(files).forEach(f => {
+    selectedFiles.forEach(f => {
       const reader = new FileReader();
       reader.onload = e => {
         const img = document.createElement('div');
@@ -184,14 +186,16 @@
     });
   }
 
-  function handleSubmit() {
+  async function handleSubmit() {
     const title  = document.getElementById('cake-title').value.trim();
     const variety = document.getElementById('bake-variety').value;
+    const servings = document.getElementById('servings').value.trim();
     const budget = document.getElementById('budget').value;
     const deadline = document.getElementById('deadline').value;
     const desc   = document.getElementById('description').value.trim();
     const errEl  = document.getElementById('form-err');
     const errMsg = document.getElementById('form-err-msg');
+    const user = SmartBakers.session.get();
     errEl.style.display = 'none';
 
     if (!title)   { errMsg.textContent = 'Please enter a title for your request.'; errEl.style.display='block'; return; }
@@ -200,15 +204,53 @@
     if (!deadline) { errMsg.textContent = 'Please select a deadline.'; errEl.style.display='block'; return; }
     if (!desc)    { errMsg.textContent = 'Please describe your request.'; errEl.style.display='block'; return; }
 
-    // In production: POST /api/requests { title, variety, dietary:[...selectedDiet], budget, deadline, description }
     const btn = document.getElementById('submit-btn');
     btn.textContent = 'Posting…';
     btn.disabled = true;
 
-    setTimeout(() => {
+    const formData = new FormData();
+    const fullDescription = [
+      `Variety: ${variety}`,
+      servings ? `Servings: ${servings}` : '',
+      selectedDiet.size ? `Dietary: ${Array.from(selectedDiet).join(', ')}` : '',
+      '',
+      desc,
+    ].filter(Boolean).join('\n');
+
+    formData.append('customer_id', String(user.numericId || 1));
+    formData.append('title', title);
+    formData.append('description', fullDescription);
+    formData.append('budget', budget);
+    formData.append('deadline', deadline);
+
+    if (selectedFiles[0]) {
+      formData.append('file', selectedFiles[0]);
+    }
+
+    try {
+      const data = await SmartBakers.api.createRequest(formData);
+      const requestId = Number(data?.request_id);
+
+      if (requestId) {
+        SmartBakers.requests.rememberOwnedId(requestId);
+        SmartBakers.requests.rememberMeta(requestId, {
+          variety,
+          servings,
+          dietary: Array.from(selectedDiet),
+          emoji: SmartBakers.requests.emojiMap[variety] || '🍰',
+        });
+        SmartBakers.routing.setActiveRequest(requestId);
+      }
+
       document.getElementById('form-content').style.display = 'none';
       document.getElementById('success-section').style.display = 'block';
-    }, 800);
+      SmartBakers.ui.toast('Your request is live in the marketplace.', 'success');
+    } catch (error) {
+      errMsg.textContent = error.message || 'Could not post the request right now.';
+      errEl.style.display = 'block';
+      btn.textContent = 'Post My Request 🎂';
+      btn.disabled = false;
+    }
   }
 
   function resetForm() {
@@ -218,6 +260,15 @@
     document.getElementById('submit-btn').disabled = false;
     document.querySelectorAll('.diet-chip').forEach(c => c.classList.remove('selected'));
     selectedDiet.clear();
+    selectedFiles = [];
+    input.value = '';
+    prev.innerHTML = '';
+    document.getElementById('cake-title').value = '';
+    document.getElementById('bake-variety').value = '';
+    document.getElementById('servings').value = '';
+    document.getElementById('budget').value = '';
+    document.getElementById('deadline').value = '';
+    document.getElementById('description').value = '';
   }
 </script>
 </body>

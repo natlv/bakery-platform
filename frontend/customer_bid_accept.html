@@ -43,7 +43,7 @@
       <div style="display:flex;align-items:center;gap:12px;margin-bottom:6px;">
         <a href="main_page_portfolio.html" style="color:rgba(255,250,245,.5);font-family:'DM Sans',sans-serif;font-size:13px;text-decoration:none;transition:color .2s;" onmouseover="this.style.color='rgba(255,250,245,.8)'" onmouseout="this.style.color='rgba(255,250,245,.5)'">← My Requests</a>
         <span style="color:rgba(255,250,245,.3);">/</span>
-        <span style="color:rgba(255,250,245,.7);font-family:'DM Sans',sans-serif;font-size:13px;">Elegant Wedding Cake</span>
+        <span id="request-title-breadcrumb" style="color:rgba(255,250,245,.7);font-family:'DM Sans',sans-serif;font-size:13px;">Loading request...</span>
       </div>
       <h1 style="font-family:'Playfair Display',serif;color:#fffaf5;font-size:32px;font-weight:700;margin:0 0 4px;">Compare Bids</h1>
       <p style="font-family:'DM Sans',sans-serif;color:rgba(255,250,245,.6);font-size:15px;margin:0;">Review and accept the best proposal for your request</p>
@@ -53,7 +53,7 @@
     <div class="glass rounded-2xl p-4 mb-6" style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;">
       <div style="text-align:center;">
         <p style="font-family:'DM Sans',sans-serif;color:#a1887f;font-size:11px;text-transform:uppercase;letter-spacing:.5px;margin:0 0 4px;font-weight:600;">Your Budget</p>
-        <p style="font-family:'Playfair Display',serif;color:#3e2723;font-size:22px;font-weight:700;margin:0;">$450</p>
+        <p style="font-family:'Playfair Display',serif;color:#3e2723;font-size:22px;font-weight:700;margin:0;" id="request-budget-display">-</p>
       </div>
       <div style="text-align:center;">
         <p style="font-family:'DM Sans',sans-serif;color:#a1887f;font-size:11px;text-transform:uppercase;letter-spacing:.5px;margin:0 0 4px;font-weight:600;">Total Bids</p>
@@ -71,7 +71,7 @@
       <button class="sort-chip active" onclick="setSort('bid-low',this)">Price: Low to High</button>
       <button class="sort-chip" onclick="setSort('bid-high',this)">Price: High to Low</button>
       <button class="sort-chip" onclick="setSort('newest',this)">Most Recent</button>
-      <button class="sort-chip" onclick="setSort('rating',this)">Highest Rated</button>
+      <button class="sort-chip" onclick="setSort('rating',this)">Baker</button>
       <button class="sort-chip" onclick="setSort('timeline',this)">Fastest Timeline</button>
     </div>
 
@@ -89,15 +89,23 @@
 </div>
 
 <script>
-  const bids = [
-    { id:1, name:"Sarah's Creations",   emoji:'👩‍🍳', rating:4.9, reviews:127, price:420, timeline:'2 weeks',  timeMs: Date.now() - 2*3600000,  notes:"I specialize in floral fondant designs. Happy to use fresh flowers!", timelineDays:14 },
-    { id:2, name:"Artisan Bakery Co",   emoji:'🎂',  rating:4.8, reviews:89,  price:450, timeline:'3 weeks',  timeMs: Date.now() - 5*3600000,  notes:"Established bakery with 10 years in wedding cakes.",              timelineDays:21 },
-    { id:3, name:"The Cake Studio",     emoji:'🧁',  rating:5.0, reviews:156, price:520, timeline:'1 week',   timeMs: Date.now() - 1*3600000,  notes:"Premium tier, fastest turnaround in Singapore.",                  timelineDays:7  },
-    { id:4, name:"Homemade Delights",   emoji:'🍰',  rating:4.7, reviews:64,  price:380, timeline:'10 days',  timeMs: Date.now() - 24*3600000, notes:"Home baker, personal touch, all organic ingredients.",            timelineDays:10 },
-  ];
-
+  let requestData = null;
+  let bids = [];
   let currentSort = 'bid-low';
-  let sorted = [...bids];
+  let sorted = [];
+
+  function bakerLabel(bid) {
+    return bid.baker_id ? `Baker #${bid.baker_id}` : `Bid #${bid.bid_id}`;
+  }
+
+  function emojiForBid(index) {
+    return ['🧑‍🍳', '🎂', '🧁', '🍰', '🥖'][index % 5];
+  }
+
+  function timelineDays(text) {
+    const match = String(text || '').match(/(\d+)/);
+    return match ? Number(match[1]) : 999;
+  }
 
   function setSort(sort, el) {
     currentSort = sort;
@@ -108,93 +116,137 @@
 
   function applySort() {
     sorted = [...bids];
-    if (currentSort === 'bid-low')   sorted.sort((a,b) => a.price - b.price);
-    if (currentSort === 'bid-high')  sorted.sort((a,b) => b.price - a.price);
-    if (currentSort === 'newest')    sorted.sort((a,b) => b.timeMs - a.timeMs);
-    if (currentSort === 'rating')    sorted.sort((a,b) => b.rating - a.rating);
-    if (currentSort === 'timeline')  sorted.sort((a,b) => a.timelineDays - b.timelineDays);
+    if (currentSort === 'bid-low')  sorted.sort((a,b) => Number(a.price || 0) - Number(b.price || 0));
+    if (currentSort === 'bid-high') sorted.sort((a,b) => Number(b.price || 0) - Number(a.price || 0));
+    if (currentSort === 'newest')   sorted.sort((a,b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
+    if (currentSort === 'rating')   sorted.sort((a,b) => bakerLabel(a).localeCompare(bakerLabel(b)));
+    if (currentSort === 'timeline') sorted.sort((a,b) => timelineDays(a.timeline) - timelineDays(b.timeline));
     renderBids();
   }
 
-  function timeAgo(ms) {
-    const diff = Date.now() - ms;
-    const h = Math.floor(diff / 3600000);
-    if (h < 1) return 'just now';
-    if (h < 24) return `${h} hr ago`;
-    return `${Math.floor(h/24)} day(s) ago`;
+  function renderRequestSummary() {
+    document.getElementById('request-title-breadcrumb').textContent = requestData ? requestData.title : 'Request';
+    document.getElementById('request-budget-display').textContent = requestData ? SmartBakers.utils.formatCurrency(requestData.budget) : '—';
+    document.getElementById('bid-count-display').textContent = String(bids.length);
+    document.getElementById('lowest-bid-display').textContent = bids.length
+      ? SmartBakers.utils.formatCurrency(Math.min(...bids.map(bid => Number(bid.price || 0)).filter(Number.isFinite)))
+      : '—';
   }
 
   function renderBids() {
     const container = document.getElementById('bids-container');
+    container.style.display = 'flex';
     container.innerHTML = '';
-    const lowestPrice = Math.min(...sorted.map(b => b.price));
 
-    sorted.forEach((bid, i) => {
-      const isWinner = bid.price === lowestPrice;
-      const stars = '★'.repeat(Math.round(bid.rating)) + '☆'.repeat(5 - Math.round(bid.rating));
+    if (!sorted.length) {
+      container.innerHTML = `<div class="glass rounded-2xl p-6" style="text-align:center;font-family:'DM Sans',sans-serif;color:#8d6e63;">No bids have arrived for this request yet.</div>`;
+      return;
+    }
+
+    const lowestPrice = Math.min(...sorted.map(bid => Number(bid.price || 0)).filter(Number.isFinite));
+
+    sorted.forEach((bid, index) => {
+      const isWinner = Number(bid.price) === lowestPrice;
+      const isAccepted = requestData && Number(requestData.accepted_bid_id) === Number(bid.bid_id);
       const card = document.createElement('div');
       card.className = `bid-card slide-up ${isWinner ? 'winner' : ''}`;
-      card.style.animationDelay = `${i * 0.08}s`;
+      card.style.animationDelay = `${index * 0.08}s`;
 
       card.innerHTML = `
         <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;">
-          <!-- Baker Info -->
           <div style="display:flex;gap:14px;align-items:center;flex:1;min-width:200px;">
-            <div style="width:54px;height:54px;border-radius:50%;background:linear-gradient(135deg,#c8956c,#a67c52);display:flex;align-items:center;justify-content:center;font-size:26px;flex-shrink:0;box-shadow:0 4px 12px rgba(200,149,108,.2);">${bid.emoji}</div>
+            <div style="width:54px;height:54px;border-radius:50%;background:linear-gradient(135deg,#c8956c,#a67c52);display:flex;align-items:center;justify-content:center;font-size:26px;flex-shrink:0;box-shadow:0 4px 12px rgba(200,149,108,.2);">${emojiForBid(index)}</div>
             <div>
-              <div style="display:flex;align-items:center;gap:8px;">
-                <p style="font-family:'Playfair Display',serif;color:#3e2723;font-size:17px;font-weight:600;margin:0;">${bid.name}</p>
-                ${isWinner ? '<span style="background:rgba(107,143,94,.15);color:#4a7c3f;padding:3px 8px;border-radius:6px;font-size:10px;font-weight:700;font-family:\'DM Sans\',sans-serif;border:1px solid rgba(107,143,94,.25);">Best Value</span>' : ''}
+              <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                <p style="font-family:'Playfair Display',serif;color:#3e2723;font-size:17px;font-weight:600;margin:0;">${SmartBakers.utils.escHtml(bakerLabel(bid))}</p>
+                ${isAccepted ? '<span style="background:rgba(107,143,94,.15);color:#4a7c3f;padding:3px 8px;border-radius:6px;font-size:10px;font-weight:700;font-family:\'DM Sans\',sans-serif;border:1px solid rgba(107,143,94,.25);">Accepted</span>' : isWinner ? '<span style="background:rgba(107,143,94,.15);color:#4a7c3f;padding:3px 8px;border-radius:6px;font-size:10px;font-weight:700;font-family:\'DM Sans\',sans-serif;border:1px solid rgba(107,143,94,.25);">Best Value</span>' : ''}
               </div>
-              <p style="font-family:'DM Sans',sans-serif;color:#f5a623;font-size:13px;margin:4px 0 2px;">${stars.slice(0,Math.round(bid.rating))} <span style="color:#a1887f;">${bid.rating} (${bid.reviews} reviews)</span></p>
-              <p style="font-family:'DM Sans',sans-serif;color:#a1887f;font-size:12px;margin:0;">Submitted ${timeAgo(bid.timeMs)}</p>
+              <p style="font-family:'DM Sans',sans-serif;color:#a1887f;font-size:12px;margin:4px 0 0;">Submitted ${SmartBakers.utils.escHtml(SmartBakers.utils.timeAgo(bid.created_at))}</p>
             </div>
           </div>
 
-          <!-- Bid Stats -->
           <div style="display:flex;gap:24px;align-items:center;flex-wrap:wrap;">
             <div style="text-align:center;">
               <p style="font-family:'DM Sans',sans-serif;color:#a1887f;font-size:10px;text-transform:uppercase;letter-spacing:.5px;margin:0 0 4px;font-weight:600;">Bid Price</p>
-              <p style="font-family:'Playfair Display',serif;color:${isWinner ? '#6b8f5e' : '#3e2723'};font-size:22px;font-weight:700;margin:0;">$${bid.price}</p>
+              <p style="font-family:'Playfair Display',serif;color:${isWinner ? '#6b8f5e' : '#3e2723'};font-size:22px;font-weight:700;margin:0;">${SmartBakers.utils.formatCurrency(bid.price)}</p>
             </div>
             <div style="text-align:center;">
               <p style="font-family:'DM Sans',sans-serif;color:#a1887f;font-size:10px;text-transform:uppercase;letter-spacing:.5px;margin:0 0 4px;font-weight:600;">Timeline</p>
-              <p style="font-family:'Playfair Display',serif;color:#3e2723;font-size:18px;font-weight:600;margin:0;">${bid.timeline}</p>
+              <p style="font-family:'Playfair Display',serif;color:#3e2723;font-size:18px;font-weight:600;margin:0;">${SmartBakers.utils.escHtml(bid.timeline || 'Not specified')}</p>
             </div>
           </div>
 
-          <!-- Actions -->
           <div style="display:flex;gap:8px;align-items:center;flex-shrink:0;">
-            <button class="decline-btn" onclick="handleDecline(${bid.id})">Decline</button>
-            <button class="accept-btn" onclick="handleAccept(${bid.id},'${bid.name}')">Accept Bid</button>
+            <button class="decline-btn" onclick="handleDecline(${bid.bid_id})">Hide</button>
+            <button class="accept-btn" onclick="handleAccept(${bid.bid_id}, '${SmartBakers.utils.escHtml(bakerLabel(bid))}')" ${isAccepted ? 'disabled style="opacity:.65;cursor:default;"' : ''}>${isAccepted ? 'Accepted' : 'Accept Bid'}</button>
           </div>
         </div>
 
         ${bid.notes ? `
         <div style="margin-top:14px;padding:12px 14px;background:rgba(200,149,108,.05);border-radius:10px;border-left:3px solid rgba(200,149,108,.3);">
-          <p style="font-family:'DM Sans',sans-serif;color:#5c3d2e;font-size:13px;margin:0;line-height:1.5;">💬 "${bid.notes}"</p>
+          <p style="font-family:'DM Sans',sans-serif;color:#5c3d2e;font-size:13px;margin:0;line-height:1.6;white-space:pre-line;">${SmartBakers.utils.escHtml(bid.notes)}</p>
         </div>` : ''}
       `;
       container.appendChild(card);
     });
   }
 
-  function handleAccept(id, name) {
+  async function handleAccept(id, name) {
+    if (!requestData) return;
     if (!confirm(`Accept the bid from ${name}?`)) return;
-    document.getElementById('bids-container').style.display = 'none';
-    document.getElementById('accepted-text').textContent = `${name} has been notified and will contact you shortly. 🎂`;
-    document.getElementById('accepted-msg').style.display = 'block';
+
+    try {
+      await SmartBakers.api.acceptBid(requestData.request_id, id);
+      requestData.status = 'accepted';
+      requestData.accepted_bid_id = id;
+      document.getElementById('bids-container').style.display = 'none';
+      document.getElementById('accepted-text').textContent = `${name} has been notified and this request is now marked accepted.`;
+      document.getElementById('accepted-msg').style.display = 'block';
+      SmartBakers.ui.toast('Bid accepted.', 'success');
+      renderRequestSummary();
+    } catch (error) {
+      SmartBakers.ui.toast(error.message || 'Could not accept this bid.', 'error');
+    }
   }
 
   function handleDecline(id) {
-    const idx = bids.findIndex(b => b.id === id);
-    if (idx > -1) bids.splice(idx, 1);
-    document.getElementById('bid-count-display').textContent = bids.length;
-    document.getElementById('lowest-bid-display').textContent = bids.length ? '$' + Math.min(...bids.map(b=>b.price)) : '—';
+    bids = bids.filter(bid => Number(bid.bid_id) !== Number(id));
+    renderRequestSummary();
     applySort();
   }
 
-  document.addEventListener('DOMContentLoaded', () => applySort());
+  async function loadBidComparisonPage() {
+    const requestId = SmartBakers.routing.currentRequestId();
+    if (!requestId) {
+      document.getElementById('bids-container').innerHTML = `<div class="glass rounded-2xl p-6" style="text-align:center;font-family:'DM Sans',sans-serif;color:#8d6e63;">Open this page from one of your requests to compare live bids.</div>`;
+      return;
+    }
+
+    try {
+      requestData = await SmartBakers.api.getRequest(requestId);
+    } catch (error) {
+      const fallback = await SmartBakers.api.getRequests({ includeAllStatuses: true }).catch(() => []);
+      requestData = fallback.find(item => Number(item.request_id) === Number(requestId)) || null;
+      if (!requestData) {
+        document.getElementById('bids-container').innerHTML = `<div class="glass rounded-2xl p-6" style="text-align:center;font-family:'DM Sans',sans-serif;color:#c62828;">${SmartBakers.utils.escHtml(error.message || 'Could not load request details.')}</div>`;
+        return;
+      }
+    }
+
+    bids = await SmartBakers.api.getBids(requestId).catch(() => []);
+    renderRequestSummary();
+
+    if (requestData.status === 'accepted' && requestData.accepted_bid_id) {
+      document.getElementById('accepted-text').textContent = `Bid #${requestData.accepted_bid_id} has already been accepted for this request.`;
+      document.getElementById('accepted-msg').style.display = 'block';
+      document.getElementById('bids-container').style.display = 'none';
+      return;
+    }
+
+    applySort();
+  }
+
+  document.addEventListener('DOMContentLoaded', loadBidComparisonPage);
 </script>
 </body>
 </html>

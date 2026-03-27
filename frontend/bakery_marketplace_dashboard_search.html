@@ -92,19 +92,8 @@
 
 <script>
   let currentSort = 'newest';
-
-  const mockRequests = [
-    { id:1, title:'Elegant Wedding Cake',     variety:'wedding-cake',  emoji:'🎂', budget:450, deadline:'2024-04-15', bidsCount:3, description:'Three-tier with floral design & fondant. Fresh flowers preferred.', dietary:['Vegan','Gluten Free'] },
-    { id:2, title:'Chocolate Birthday Cake',  variety:'birthday-cake', emoji:'🍰', budget:80,  deadline:'2024-03-20', bidsCount:2, description:'Rich chocolate ganache, serves 20 people.', dietary:['Halal'] },
-    { id:3, title:'Sourdough Bread Loaves',   variety:'bread',         emoji:'🍞', budget:45,  deadline:'2024-03-18', bidsCount:0, description:'Traditional crusty sourdough x4. Need pickup or delivery.', dietary:['Vegan'] },
-    { id:4, title:'Rainbow Assorted Cookies', variety:'cookies',       emoji:'🍪', budget:120, deadline:'2024-03-22', bidsCount:4, description:'Colorful sugar cookies for school event, 60 pieces.', dietary:['Nut Free'] },
-    { id:5, title:'Classic French Croissants',variety:'pastry',        emoji:'🥐', budget:60,  deadline:'2024-04-01', bidsCount:1, description:'Handmade buttery croissants x12 for Sunday brunch.', dietary:[] },
-    { id:6, title:'Vegan Cupcakes Batch',     variety:'cupcakes',      emoji:'🧁', budget:95,  deadline:'2024-03-30', bidsCount:2, description:'24 vegan vanilla cupcakes with buttercream frosting.', dietary:['Vegan','Dairy Free'] },
-    { id:7, title:'Anniversary Tiramisu',     variety:'pastry',        emoji:'☕', budget:150, deadline:'2024-04-10', bidsCount:0, description:'Classic Italian tiramisu for 25 guests.', dietary:['Sugar Control'] },
-    { id:8, title:'Hamantaschen Cookies',     variety:'cookies',       emoji:'🔺', budget:70,  deadline:'2024-03-24', bidsCount:1, description:'Traditional filled cookies, apricot and poppy seed.', dietary:['Kosher'] },
-  ];
-
-  let filtered = [...mockRequests];
+  let allRequests = [];
+  let filtered = [];
 
   function setSort(sort, el) {
     currentSort = sort;
@@ -115,11 +104,32 @@
 
   function budgetMatches(budget, filter) {
     if (!filter) return true;
-    if (filter === '0-50')  return budget <= 50;
+    if (filter === '0-50') return budget <= 50;
     if (filter === '50-100') return budget > 50 && budget <= 100;
     if (filter === '100-300') return budget > 100 && budget <= 300;
     if (filter === '300+') return budget > 300;
     return true;
+  }
+
+  async function loadRequests() {
+    const grid = document.getElementById('requests-grid');
+    grid.innerHTML = '<div class="glass rounded-2xl p-6" style="grid-column:1 / -1;text-align:center;font-family:\'DM Sans\',sans-serif;color:#8d6e63;">Loading marketplace...</div>';
+
+    try {
+      const requests = await SmartBakers.api.getRequests({ status: 'open' });
+      allRequests = await Promise.all(
+        requests.map(async (request) => {
+          const bids = await SmartBakers.api.getBids(request.request_id).catch(() => []);
+          return {
+            ...request,
+            bidsCount: Number.isFinite(request.bid_count) ? request.bid_count : bids.length,
+          };
+        })
+      );
+      applyFilters();
+    } catch (error) {
+      grid.innerHTML = `<div class="glass rounded-2xl p-6" style="grid-column:1 / -1;text-align:center;font-family:'DM Sans',sans-serif;color:#c62828;">${SmartBakers.utils.escHtml(error.message || 'Could not load the marketplace.')}</div>`;
+    }
   }
 
   function applyFilters() {
@@ -127,18 +137,18 @@
     const variety = document.getElementById('variety-filter').value;
     const budget  = document.getElementById('budget-filter').value;
 
-    filtered = mockRequests.filter(r => {
-      const matchSearch  = r.title.toLowerCase().includes(search) || r.description.toLowerCase().includes(search);
-      const matchVariety = !variety || r.variety === variety;
-      const matchBudget  = budgetMatches(r.budget, budget);
+    filtered = allRequests.filter(request => {
+      const matchSearch  = request.title.toLowerCase().includes(search) || request.details.toLowerCase().includes(search);
+      const matchVariety = !variety || request.variety === variety;
+      const matchBudget  = budgetMatches(Number(request.budget || 0), budget);
       return matchSearch && matchVariety && matchBudget;
     });
 
-    if (currentSort === 'newest')       filtered.sort((a,b) => b.id - a.id);
-    if (currentSort === 'budget-high')  filtered.sort((a,b) => b.budget - a.budget);
-    if (currentSort === 'budget-low')   filtered.sort((a,b) => a.budget - b.budget);
-    if (currentSort === 'deadline')     filtered.sort((a,b) => new Date(a.deadline) - new Date(b.deadline));
-    if (currentSort === 'fewest-bids')  filtered.sort((a,b) => a.bidsCount - b.bidsCount);
+    if (currentSort === 'newest')      filtered.sort((a,b) => new Date(b.created_at || 0) - new Date(a.created_at || 0) || b.request_id - a.request_id);
+    if (currentSort === 'budget-high') filtered.sort((a,b) => Number(b.budget || 0) - Number(a.budget || 0));
+    if (currentSort === 'budget-low')  filtered.sort((a,b) => Number(a.budget || 0) - Number(b.budget || 0));
+    if (currentSort === 'deadline')    filtered.sort((a,b) => new Date(a.deadline || 0) - new Date(b.deadline || 0));
+    if (currentSort === 'fewest-bids') filtered.sort((a,b) => Number(a.bidsCount || 0) - Number(b.bidsCount || 0));
 
     document.getElementById('results-count').textContent = `Showing ${filtered.length} request${filtered.length !== 1 ? 's' : ''}`;
     renderCards();
@@ -148,38 +158,46 @@
     const grid  = document.getElementById('requests-grid');
     const empty = document.getElementById('empty-msg');
     grid.innerHTML = '';
-    if (!filtered.length) { empty.style.display = 'block'; return; }
+
+    if (!filtered.length) {
+      empty.style.display = 'block';
+      return;
+    }
+
     empty.style.display = 'none';
 
-    filtered.forEach((req, i) => {
+    filtered.forEach((request, index) => {
       const card = document.createElement('div');
       card.className = 'request-card slide-up';
-      card.style.animationDelay = `${i * 0.07}s`;
+      card.style.animationDelay = `${index * 0.07}s`;
 
-      const daysLeft = Math.ceil((new Date(req.deadline) - new Date()) / 86400000);
-      const urgency  = daysLeft <= 3 ? '#e53935' : daysLeft <= 7 ? '#e08a2e' : '#a1887f';
+      const daysLeft = SmartBakers.utils.daysUntil(request.deadline);
+      const urgency = daysLeft !== null && daysLeft <= 3 ? '#e53935' : daysLeft !== null && daysLeft <= 7 ? '#e08a2e' : '#a1887f';
+      const requestUrl = SmartBakers.routing.requestUrl('bakers_splitscreen_bidpage.html', request.request_id);
 
       card.innerHTML = `
-        <div style="height:130px;display:flex;align-items:center;justify-content:center;font-size:64px;background:linear-gradient(135deg,rgba(200,149,108,.08),rgba(210,180,140,.06));">${req.emoji}</div>
+        <div style="height:130px;display:flex;align-items:center;justify-content:center;font-size:64px;background:linear-gradient(135deg,rgba(200,149,108,.08),rgba(210,180,140,.06));overflow:hidden;">
+          ${request.image_url ? `<img src="${SmartBakers.utils.escHtml(request.image_url)}" alt="" style="width:100%;height:100%;object-fit:cover;">` : request.emoji}
+        </div>
         <div style="padding:18px;">
           <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;">
-            <h3 style="font-family:'Playfair Display',serif;color:#3e2723;font-size:17px;font-weight:600;margin:0;flex:1;margin-right:10px;">${req.title}</h3>
-            <div class="price-tag">$${req.budget}</div>
+            <h3 style="font-family:'Playfair Display',serif;color:#3e2723;font-size:17px;font-weight:600;margin:0;flex:1;margin-right:10px;">${SmartBakers.utils.escHtml(request.title)}</h3>
+            <div class="price-tag">${SmartBakers.utils.formatCurrency(request.budget)}</div>
           </div>
 
-          <p style="font-family:'DM Sans',sans-serif;color:#8d6e63;font-size:13px;margin:0 0 12px;line-height:1.5;">${req.description}</p>
+          <p style="font-family:'DM Sans',sans-serif;color:#8d6e63;font-size:13px;margin:0 0 12px;line-height:1.5;">${SmartBakers.utils.escHtml(request.details)}</p>
 
           <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;">
-            <span class="badge">${req.variety.replace('-',' ')}</span>
-            ${req.dietary.map(d => `<span class="diet-tag">${d}</span>`).join('')}
+            <span class="badge">${SmartBakers.utils.escHtml(SmartBakers.utils.sentenceCase(request.variety))}</span>
+            ${request.dietary.map(item => `<span class="diet-tag">${SmartBakers.utils.escHtml(item)}</span>`).join('')}
           </div>
 
           <div style="display:flex;justify-content:space-between;margin-bottom:14px;">
-            <span style="font-family:'DM Sans',sans-serif;font-size:12px;color:${urgency};">📅 ${daysLeft > 0 ? daysLeft + ' days left' : 'Overdue'}</span>
-            <span style="font-family:'DM Sans',sans-serif;font-size:12px;color:#a1887f;">🏷️ ${req.bidsCount} bid${req.bidsCount !== 1 ? 's' : ''}</span>
+            <span style="font-family:'DM Sans',sans-serif;font-size:12px;color:${urgency};">📅 ${daysLeft === null ? 'Flexible deadline' : daysLeft > 0 ? `${daysLeft} days left` : 'Due now'}</span>
+            <span style="font-family:'DM Sans',sans-serif;font-size:12px;color:#a1887f;">🏷️ ${request.bidsCount} bid${request.bidsCount !== 1 ? 's' : ''}</span>
           </div>
 
-          <a href="bakers_splitscreen_bidpage.html">
+          <a href="${requestUrl}" onclick="SmartBakers.routing.setActiveRequest(${request.request_id})">
             <button class="bid-btn">Place My Bid →</button>
           </a>
         </div>
@@ -188,7 +206,7 @@
     });
   }
 
-  document.addEventListener('DOMContentLoaded', () => applyFilters());
+  document.addEventListener('DOMContentLoaded', loadRequests);
 </script>
 </body>
 </html>
