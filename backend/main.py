@@ -2,6 +2,8 @@ from typing import Optional
 
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import RedirectResponse
+from fastapi.staticfiles import StaticFiles
 from dotenv import load_dotenv
 import shutil
 import os
@@ -28,6 +30,7 @@ bucket = Bucket()
 
 UPLOAD_DIR = "uploads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
+FRONTEND_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "frontend"))
 
 
 def serialize_request_row(row):
@@ -60,7 +63,17 @@ def serialize_bid_row(row):
 
 @app.get("/")
 def root():
+    return RedirectResponse(url="/login.html", status_code=307)
+
+
+@app.get("/api")
+def api_root():
     return {"message": "Backend running"}
+
+
+@app.get("/health")
+def health():
+    return {"status": "ok"}
 
 @app.post("/upload-image")
 async def upload_image(file: UploadFile = File(...)):
@@ -300,3 +313,6 @@ def accept_bid(
         "accepted_bid_id": bid_id,
         "status": "accepted",
     }
+
+
+app.mount("/", StaticFiles(directory=FRONTEND_DIR, html=True), name="frontend")
