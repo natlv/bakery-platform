@@ -1,12 +1,15 @@
 import pg8000
 import csv
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 conn = pg8000.connect(
-    host="10.52.68.3",
-    port=5432,
-    database="bakery_db",
-    user="postgres",
-    password="CS5224Database!"
+    host=os.getenv("DB_HOST"),
+    database=os.getenv("DB_NAME"),
+    user=os.getenv("DB_USER"),
+    password=os.getenv("DB_PASSWORD"),
 )
 cursor = conn.cursor()
 

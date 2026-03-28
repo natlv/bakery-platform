@@ -2,19 +2,23 @@ import pg8000
 import requests
 import json
 from sentence_transformers import SentenceTransformer
+from dotenv import load_dotenv
+import os
+
 
 # Load model once when the file is imported
 embed_model = SentenceTransformer('all-MiniLM-L6-v2')
 
-SEALION_API_KEY = "sk-mSMHrYXZuVe4j25gORBs2Q"
+load_dotenv()
+SEALION_API_KEY = os.getenv("SEALION_API_KEY")
 SEALION_API_URL = "https://api.sea-lion.ai/v1/chat/completions"
 
 def get_db_connection():
     return pg8000.connect(
-        host="10.52.68.3",
-        database="bakery_db",
-        user="postgres",
-        password="CS5224Database!"
+        host=os.getenv("DB_HOST"),
+        database=os.getenv("DB_NAME"),
+        user=os.getenv("DB_USER"),
+        password=os.getenv("DB_PASSWORD"),
     )
 
 def match_bakers(request_text: str, top_n: int = 5):

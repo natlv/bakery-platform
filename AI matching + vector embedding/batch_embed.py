@@ -1,12 +1,17 @@
 import pg8000
 from sentence_transformers import SentenceTransformer
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
+DATABASE_PASSWORD = os.getenv('DATABASE_PASSWORD')
 
 # Connect to Cloud SQL
 conn = pg8000.connect(
-    host="10.52.68.3",
-    database="bakery_db",
-    user="postgres",
-    password="CS5224Database!"
+    host=os.getenv("DB_HOST"),
+    database=os.getenv("DB_NAME"),
+    user=os.getenv("DB_USER"),
+    password=os.getenv("DB_PASSWORD"),
 )
 cursor = conn.cursor()
 

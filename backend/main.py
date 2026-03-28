@@ -10,6 +10,7 @@ import os
 from urllib.parse import urlparse, unquote
 from bucket_utils import Bucket
 from db import cursor, conn
+from log_setup import backend_logger as logger
 
 load_dotenv()
 
@@ -18,6 +19,7 @@ if credentials_path:
     os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = credentials_path
 
 app = FastAPI()
+logger.info("FastAPI application initialized")
 
 app.add_middleware(
     CORSMiddleware,
@@ -94,6 +96,7 @@ def api_root():
 
 @app.get("/health")
 def health():
+    logger.info("Health check requested")
     return {"status": "ok"}
 
 @app.post("/upload-image")
@@ -101,7 +104,7 @@ async def upload_image(file: UploadFile = File(...)):
 
     # save locally
     local_path = os.path.join(UPLOAD_DIR, file.filename)
-
+    logger.info(f"Received file upload: {file.filename}")
     with open(local_path, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
 
@@ -109,11 +112,12 @@ async def upload_image(file: UploadFile = File(...)):
     success = bucket.upload_image(local_path)
 
     if not success:
+        logger.info(f"File {file.filename} already exists in bucket. Returning error.")
         return {"error": "File already exists"}
 
     # generate signed URL
     signed_url = bucket.find_image(file.filename)
-
+    logger.info(f"File {file.filename} uploaded successfully.")
     return {
         "message": "uploaded",
         "url": signed_url
@@ -128,7 +132,7 @@ async def create_request(
     deadline: str = Form(None),
     file: UploadFile = File(None)
 ):
-
+    logger.info(f"Received request for customer {customer_id}: {title}")
     image_url = None
 
     if file:
@@ -136,6 +140,7 @@ async def create_request(
 
         with open(local_path, "wb") as buffer:
             shutil.copyfileobj(file.file, buffer)
+        logger.info(f"File saved locally: {local_path}")
 
         bucket.upload_image(local_path)
         image_url = file.filename
@@ -149,9 +154,10 @@ async def create_request(
         """,
         (customer_id, title, description, budget, deadline, image_url)
     )
-
+    
     request_id = cursor.fetchone()[0]
     conn.commit()
+    logger.info(f"Request for customer {customer_id} created: {title} (ID: {request_id})")
     return {"request_id": request_id}
 
 @app.get("/requests")
@@ -162,7 +168,7 @@ def get_requests(
 ):
     clauses = []
     params = []
-
+    logger.info(f"Fetching requests with filters - customer_id: {customer_id}, status: {status}, include_all_statuses: {include_all_statuses}")
     if customer_id is not None:
         clauses.append("r.customer_id = %s")
         params.append(customer_id)
@@ -207,11 +213,13 @@ def get_requests(
     )
 
     rows = cursor.fetchall()
+    logger.info(f"Retrieved {len(rows)} requests")
     return [serialize_request_row(row) for row in rows]
 
 
 @app.get("/requests/{request_id}")
 def get_request(request_id: int):
+    logger.info(f"Fetching request with ID: {request_id}")
     cursor.execute(
         """
         SELECT
@@ -244,6 +252,7 @@ def get_request(request_id: int):
 
     row = cursor.fetchone()
     if not row:
+        logger.info(f"Request with ID {request_id} not found")
         raise HTTPException(status_code=404, detail="Request not found")
 
     return serialize_request_row(row)
@@ -256,6 +265,7 @@ def submit_bid(
     timeline: str = Form(...),
     notes: str = Form(None)
 ):
+    logger.info(f"Receiving bid for request {request_id} by baker {baker_id}")
     cursor.execute(
         """
         SELECT status
@@ -267,9 +277,11 @@ def submit_bid(
 
     request_row = cursor.fetchone()
     if not request_row:
+        logger.info(f"Request with ID {request_id} not found")
         raise HTTPException(status_code=404, detail="Request not found")
 
     if request_row[0] != "open":
+        logger.info(f"Request with ID {request_id} is not open for bids")
         raise HTTPException(status_code=400, detail="This request is no longer open for bids")
 
     cursor.execute(
@@ -282,11 +294,12 @@ def submit_bid(
     )
 
     conn.commit()
+    logger.info(f"Bid submitted for request {request_id}")
     return {"message": "bid submitted"}
 
 @app.get("/bids/{request_id}")
 def get_bids(request_id: int):
-
+    logger.info(f"Fetching bids for request ID: {request_id}")
     cursor.execute(
         """
         SELECT bid_id, request_id, baker_id, price, timeline, notes, created_at
@@ -298,6 +311,7 @@ def get_bids(request_id: int):
     )
 
     rows = cursor.fetchall()
+    logger.info(f"Retrieved {len(rows)} bids for request ID: {request_id}")
     return [serialize_bid_row(row) for row in rows]
 
 @app.post("/accept-bid")
@@ -305,6 +319,7 @@ def accept_bid(
     request_id: int = Form(...),
     bid_id: int = Form(...)
 ):
+    logger.info(f"Received accept bid {bid_id} for request {request_id}")
     cursor.execute(
         """
         SELECT bid_id
@@ -315,6 +330,7 @@ def accept_bid(
     )
 
     if not cursor.fetchone():
+        logger.info(f"Bid with ID {bid_id} not found for request {request_id}")
         raise HTTPException(status_code=404, detail="Bid not found for this request")
 
     cursor.execute(
@@ -327,7 +343,7 @@ def accept_bid(
     )
 
     conn.commit()
-
+    logger.info(f"Bid accepted for request {request_id}")
     return {
         "message": "bid accepted",
         "request_id": request_id,
