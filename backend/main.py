@@ -132,7 +132,7 @@ async def create_request(
     deadline: str = Form(None),
     file: UploadFile = File(None)
 ):
-    logger.info(f"Received request for customer {customer_id}: {title}")
+    logger.info(f"Received request for customer {customer_id}")
     image_url = None
 
     if file:
@@ -157,7 +157,7 @@ async def create_request(
     
     request_id = cursor.fetchone()[0]
     conn.commit()
-    logger.info(f"Request for customer {customer_id} created: {title} (ID: {request_id})")
+    logger.info(f"Request for customer {customer_id} created (ID: {request_id})")
     return {"request_id": request_id}
 
 @app.get("/requests")

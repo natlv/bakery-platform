@@ -4,7 +4,6 @@ from dotenv import load_dotenv
 import os
 
 load_dotenv()
-DATABASE_PASSWORD = os.getenv('DATABASE_PASSWORD')
 
 # Connect to Cloud SQL
 conn = pg8000.connect(
