@@ -7,6 +7,7 @@ from fastapi.staticfiles import StaticFiles
 from dotenv import load_dotenv
 import shutil
 import os
+from urllib.parse import urlparse, unquote
 from bucket_utils import Bucket
 from db import cursor, conn
 
@@ -33,6 +34,26 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 FRONTEND_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "frontend"))
 
 
+def resolve_image_url(image_ref):
+    if not image_ref:
+        return None
+
+    object_name = image_ref
+
+    if str(image_ref).startswith(("http://", "https://")):
+        parsed = urlparse(image_ref)
+        path = unquote(parsed.path.rstrip("/"))
+        if not path:
+            return image_ref
+        object_name = path.split("/")[-1]
+
+    try:
+        refreshed_url = bucket.find_image(object_name)
+        return refreshed_url or image_ref
+    except Exception:
+        return image_ref
+
+
 def serialize_request_row(row):
     return {
         "request_id": row[0],
@@ -42,7 +63,7 @@ def serialize_request_row(row):
         "budget": float(row[4]) if row[4] is not None else None,
         "deadline": row[5].isoformat() if hasattr(row[5], "isoformat") else row[5],
         "status": row[6],
-        "image_url": row[7],
+        "image_url": resolve_image_url(row[7]),
         "accepted_bid_id": row[8],
         "created_at": row[9].isoformat() if hasattr(row[9], "isoformat") else row[9],
         "bid_count": row[10] or 0,
@@ -117,7 +138,7 @@ async def create_request(
             shutil.copyfileobj(file.file, buffer)
 
         bucket.upload_image(local_path)
-        image_url = bucket.find_image(file.filename)
+        image_url = file.filename
 
     cursor.execute(
         """
