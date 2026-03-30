@@ -7,7 +7,14 @@ import os
 
 
 # Load model once when the file is imported
-embed_model = SentenceTransformer('all-MiniLM-L6-v2')
+embed_model = None
+
+def get_embed_model():
+    global embed_model
+    if embed_model is None:
+        from sentence_transformers import SentenceTransformer
+        embed_model = SentenceTransformer('all-MiniLM-L6-v2')
+    return embed_model
 
 load_dotenv()
 SEALION_API_KEY = os.getenv("SEALION_API_KEY")
