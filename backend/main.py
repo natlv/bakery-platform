@@ -13,7 +13,7 @@ from pydantic import BaseModel
 import sys
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from matching import match_bakers
-from log_setup import logger
+from log_setup import backend_logger as logger
 
 load_dotenv()
 
