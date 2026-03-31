@@ -1,5 +1,5 @@
 from typing import Optional
-
+from fastapi.staticfiles import StaticFiles
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse
@@ -16,6 +16,8 @@ from matching import match_bakers
 from log_setup import backend_logger as logger
 
 load_dotenv()
+
+FRONTEND_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "frontend"))
 
 credentials_path = os.getenv("GOOGLE_APPLICATION_CREDENTIALS") or os.getenv("KEY_PATH")
 if credentials_path:
@@ -323,3 +325,5 @@ class MatchRequest(BaseModel):
 async def match_bakers_endpoint(request: MatchRequest):
     results = match_bakers(request.query)
     return results
+
+app.mount("/", StaticFiles(directory=FRONTEND_DIR, html=True), name="frontend")
