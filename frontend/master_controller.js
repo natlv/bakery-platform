@@ -449,6 +449,14 @@ const SmartBakers = {
         body: formData,
       });
     },
+
+        async matchBakers(query) {
+      return SmartBakers.api.request("baker-match", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ query }),
+      });
+    },
   },
 
   notifications: {
