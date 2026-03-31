@@ -43,7 +43,7 @@ def serialize_request_row(row):
         "budget": float(row[4]) if row[4] is not None else None,
         "deadline": row[5].isoformat() if hasattr(row[5], "isoformat") else row[5],
         "status": row[6],
-        "image_url": resolve_image_url(row[7]),
+        "image_url": bucket.find_image(row[7]) if row[7] else None,
         "accepted_bid_id": row[8],
         "created_at": row[9].isoformat() if hasattr(row[9], "isoformat") else row[9],
         "bid_count": row[10] or 0,
