@@ -252,6 +252,9 @@
             <a href="${requestUrl}" style="flex:1;" onclick="SmartBakers.routing.setActiveRequest(${request.request_id})">
               <button class="btn-primary" style="width:100%;">View Bids (${valueOrZero(request.bid_count)})</button>
             </a>
+            <a href="${SmartBakers.routing.aiMatchUrl(request.request_id)}" title="AI baker suggestions" onclick="SmartBakers.routing.setActiveRequest(${request.request_id})">
+              <button class="btn-secondary" style="padding:11px 14px;min-width:unset;" title="Get AI baker match suggestions">🤖</button>
+            </a>
             <a href="posting_baking_request.html">
               <button class="btn-secondary">Post New</button>
             </a>

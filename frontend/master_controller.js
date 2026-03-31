@@ -166,7 +166,7 @@ const SmartBakers = {
   },
 
   auth: {
-    publicPages: ["", "index.html", "login.html", "forgot_password.html", "reset_password.html"],
+    publicPages: ["", "index.html", "login.html", "forgot_password.html", "reset_password.html", "guest_register.html"],
 
     check() {
       const page = SmartBakers.utils.pageName();
@@ -179,6 +179,22 @@ const SmartBakers = {
 
       if (user.role === "Baker" && page === "posting_baking_request.html") {
         SmartBakers.ui.toast("Only customers can post new requests.", "warning");
+        setTimeout(() => {
+          window.location.href = "bakery_marketplace_dashboard_search.html";
+        }, 1200);
+        return false;
+      }
+
+      if (user.role === "Customer" && page === "baker_upload_items.html") {
+        SmartBakers.ui.toast("Only bakers can manage menu items.", "warning");
+        setTimeout(() => {
+          window.location.href = "main_page_portfolio.html";
+        }, 1200);
+        return false;
+      }
+
+      if (user.role === "Baker" && page === "ai_match_suggestions.html") {
+        SmartBakers.ui.toast("AI suggestions are for customers only.", "warning");
         setTimeout(() => {
           window.location.href = "bakery_marketplace_dashboard_search.html";
         }, 1200);
@@ -210,6 +226,16 @@ const SmartBakers = {
       const url = new URL(page, window.location.href);
       if (requestId) url.searchParams.set("request_id", String(requestId));
       return `${url.pathname.split("/").pop()}${url.search}`;
+    },
+
+    aiMatchUrl(requestId) {
+      return SmartBakers.routing.requestUrl("ai_match_suggestions.html", requestId);
+    },
+
+    goToAiMatch(requestId) {
+      const id = requestId || SmartBakers.routing.currentRequestId();
+      if (id) SmartBakers.routing.setActiveRequest(id);
+      window.location.href = SmartBakers.routing.aiMatchUrl(id);
     },
 
     setActiveRequest(requestId) {
@@ -545,6 +571,11 @@ const SmartBakers = {
                 label: "Marketplace",
                 active: page === "bakery_marketplace_dashboard_search.html",
               },
+              {
+                href: "baker_upload_items.html",
+                label: "My Menu",
+                active: page === "baker_upload_items.html",
+              },
             ]
           : [
               {
@@ -756,6 +787,15 @@ const SmartBakers = {
         }
         if (action === "post-request") {
           window.location.href = "posting_baking_request.html";
+        }
+        if (action === "baker-menu") {
+          window.location.href = "baker_upload_items.html";
+        }
+        if (action === "register") {
+          window.location.href = "guest_register.html";
+        }
+        if (action === "ai-match") {
+          window.location.href = "ai_match_suggestions.html";
         }
       });
     });

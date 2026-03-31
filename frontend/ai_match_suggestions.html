@@ -1,0 +1,560 @@
+<!doctype html>
+<html lang="en" class="h-full">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Smart Bakers — AI Match Suggestions</title>
+  <script src="master_controller.js"></script>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    html,body{height:100%;margin:0;}*{box-sizing:border-box;}
+    .flour-bg{background:radial-gradient(ellipse at 20% 50%,rgba(255,248,240,.15) 0%,transparent 50%),linear-gradient(135deg,#3e2723 0%,#4e342e 25%,#5d4037 50%,#4e342e 75%,#3e2723 100%);}
+    .flour-dust{position:fixed;inset:0;opacity:.1;pointer-events:none;background-image:radial-gradient(circle at 15% 25%,#fff 1px,transparent 1px),radial-gradient(circle at 75% 35%,#fff 1.5px,transparent 1.5px),radial-gradient(circle at 85% 75%,#fff 1px,transparent 1px);}
+    .glass{background:rgba(255,252,247,.92);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,.6);}
+    .panel{background:rgba(255,252,247,.96);border:1px solid rgba(200,149,108,.18);border-radius:20px;padding:24px;}
+    .match-card{background:#fffcf7;border:2px solid rgba(200,149,108,.18);border-radius:20px;padding:22px;cursor:pointer;transition:all .3s cubic-bezier(.34,1.56,.64,1);position:relative;overflow:hidden;}
+    .match-card:hover{transform:translateY(-4px);box-shadow:0 20px 40px rgba(62,39,35,.12);border-color:rgba(200,149,108,.45);}
+    .match-card.top-pick{border-color:#c8956c;box-shadow:0 0 0 0 rgba(200,149,108,.3);}
+    .match-card.top-pick::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(200,149,108,.04),rgba(255,248,240,.02));pointer-events:none;}
+    .score-ring{width:60px;height:60px;border-radius:999px;position:relative;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+    .score-svg{position:absolute;inset:0;transform:rotate(-90deg);}
+    .score-val{font-family:'Playfair Display',serif;font-size:16px;font-weight:700;position:relative;z-index:1;}
+    .badge{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:8px;font-size:11px;font-weight:600;font-family:'DM Sans',sans-serif;}
+    .reason-pill{display:inline-flex;align-items:center;gap:5px;padding:5px 11px;border-radius:9px;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;background:rgba(200,149,108,.08);color:#8d6e63;border:1px solid rgba(200,149,108,.18);}
+    .btn-primary{padding:12px 28px;background:linear-gradient(135deg,#c8956c,#a67c52);color:#fffaf5;border:none;border-radius:13px;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;cursor:pointer;transition:all .3s cubic-bezier(.34,1.56,.64,1);box-shadow:0 8px 20px rgba(200,149,108,.25);}
+    .btn-primary:hover{transform:translateY(-2px);box-shadow:0 12px 28px rgba(200,149,108,.35);}
+    .btn-outline{padding:10px 22px;background:transparent;color:#8d6e63;border:1px solid rgba(200,149,108,.35);border-radius:12px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:all .2s;}
+    .btn-outline:hover{background:rgba(200,149,108,.07);}
+    .filter-chip{padding:7px 16px;border-radius:20px;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;cursor:pointer;border:1px solid rgba(200,149,108,.3);transition:all .2s;background:transparent;color:rgba(255,250,245,.6);}
+    .filter-chip.act{background:rgba(200,149,108,.2);color:#f5c89a;border-color:rgba(200,149,108,.5);}
+    .ai-thinking{display:flex;gap:5px;align-items:center;}
+    .dot-pulse{width:7px;height:7px;border-radius:999px;background:#c8956c;animation:dotBounce 1.4s infinite ease-in-out both;}
+    .dot-pulse:nth-child(2){animation-delay:.16s;}
+    .dot-pulse:nth-child(3){animation-delay:.32s;}
+    @keyframes dotBounce{0%,80%,100%{transform:scale(0);opacity:.3}40%{transform:scale(1);opacity:1}}
+    @keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+    @keyframes slideRight{from{opacity:0;transform:translateX(-20px)}to{opacity:1;transform:translateX(0)}}
+    @keyframes popIn{from{opacity:0;transform:scale(.88)}to{opacity:1;transform:scale(1)}}
+    .fu{animation:fadeUp .5s ease-out both;}
+    .sr{animation:slideRight .5s ease-out both;}
+    .pop{animation:popIn .4s cubic-bezier(.34,1.56,.64,1) both;}
+    /* Shimmer skeleton */
+    .skeleton{background:linear-gradient(90deg,rgba(200,149,108,.1) 25%,rgba(200,149,108,.18) 50%,rgba(200,149,108,.1) 75%);background-size:200% 100%;animation:shimmer 1.4s infinite;}
+    @keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+    /* Match detail panel */
+    #detail-overlay{position:fixed;inset:0;background:rgba(62,39,35,.55);backdrop-filter:blur(6px);z-index:200;display:none;align-items:center;justify-content:center;}
+    #detail-overlay.open{display:flex;}
+    #detail-panel{background:#fffcf7;border-radius:24px;max-width:520px;width:90%;max-height:90vh;overflow-y:auto;box-shadow:0 32px 64px rgba(62,39,35,.2);animation:popIn .3s cubic-bezier(.34,1.56,.64,1);}
+    /* Stars */
+    .star{color:#f5a623;}
+    .star.empty{color:rgba(200,149,108,.2);}
+  </style>
+</head>
+<body class="h-full">
+<div class="flour-bg h-full w-full flex flex-col relative overflow-auto">
+  <div class="flour-dust"></div>
+
+  <!-- Nav -->
+  <nav data-sb-nav class="glass sticky top-0 z-20 shadow-sm" style="padding:16px 24px;display:flex;align-items:center;justify-content:space-between;position:relative;"></nav>
+
+  <div class="flex-1 w-full max-w-5xl mx-auto px-6 py-8 relative z-10">
+
+    <!-- Breadcrumb -->
+    <div class="fu" style="margin-bottom:20px;display:flex;align-items:center;gap:8px;">
+      <a href="main_page_portfolio.html" style="font-family:'DM Sans',sans-serif;color:rgba(255,250,245,.5);font-size:13px;text-decoration:none;transition:color .2s;" onmouseover="this.style.color='rgba(255,250,245,.8)'" onmouseout="this.style.color='rgba(255,250,245,.5)'">← My Requests</a>
+      <span style="color:rgba(255,250,245,.3);">/</span>
+      <span id="bc-request" style="color:rgba(255,250,245,.7);font-family:'DM Sans',sans-serif;font-size:13px;">Loading…</span>
+      <span style="color:rgba(255,250,245,.3);">/</span>
+      <span style="color:#f5c89a;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;">🤖 AI Matches</span>
+    </div>
+
+    <!-- Header -->
+    <div class="fu" style="margin-bottom:28px;animation-delay:.05s;">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:6px;">
+        <div style="width:42px;height:42px;border-radius:12px;background:linear-gradient(135deg,#c8956c,#a67c52);display:flex;align-items:center;justify-content:center;font-size:20px;">🤖</div>
+        <div>
+          <h1 style="font-family:'Playfair Display',serif;color:#fffaf5;font-size:32px;font-weight:700;margin:0;line-height:1;">AI Baker Suggestions</h1>
+        </div>
+      </div>
+      <p style="font-family:'DM Sans',sans-serif;color:rgba(255,250,245,.6);font-size:15px;margin:0;padding-left:54px;" id="sub-header">Matching your request to the best bakers using Smart Bakers AI…</p>
+    </div>
+
+    <!-- Request summary card -->
+    <div id="request-summary" class="glass fu rounded-2xl p-5 mb-6" style="animation-delay:.1s;">
+      <div style="display:flex;align-items:flex-start;gap:14px;">
+        <div id="req-emoji" style="font-size:44px;flex-shrink:0;">🎂</div>
+        <div style="flex:1;min-width:0;">
+          <p style="font-family:'Playfair Display',serif;color:#3e2723;font-size:20px;font-weight:700;margin:0 0 4px;" id="req-title">Loading…</p>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;" id="req-badges"></div>
+          <p style="font-family:'DM Sans',sans-serif;color:#8d6e63;font-size:13px;margin:0;line-height:1.5;max-width:600px;" id="req-desc"></p>
+        </div>
+        <div style="text-align:right;flex-shrink:0;">
+          <p style="font-family:'DM Sans',sans-serif;color:#a1887f;font-size:11px;text-transform:uppercase;letter-spacing:.5px;margin:0 0 2px;">Budget</p>
+          <p style="font-family:'Playfair Display',serif;color:#c8956c;font-size:24px;font-weight:700;margin:0;" id="req-budget">—</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- AI status bar -->
+    <div id="ai-status-bar" class="glass fu rounded-2xl p-4 mb-6" style="animation-delay:.15s;display:flex;align-items:center;gap:14px;">
+      <div id="ai-icon" style="width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,#c8956c,#a67c52);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">🤖</div>
+      <div style="flex:1;">
+        <p id="ai-status-text" style="font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;color:#3e2723;margin:0 0 2px;">Analysing your request…</p>
+        <p id="ai-status-sub" style="font-family:'DM Sans',sans-serif;font-size:12px;color:#a1887f;margin:0;">Checking baker profiles, ratings, speciality, and past performance</p>
+      </div>
+      <div class="ai-thinking" id="ai-loading">
+        <div class="dot-pulse"></div><div class="dot-pulse"></div><div class="dot-pulse"></div>
+      </div>
+      <div id="ai-done-check" style="display:none;font-size:22px;">✅</div>
+    </div>
+
+    <!-- Filters -->
+    <div class="fu" id="filter-bar" style="display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap;align-items:center;animation-delay:.2s;">
+      <span style="font-family:'DM Sans',sans-serif;color:rgba(255,250,245,.5);font-size:13px;">Filter:</span>
+      <button class="filter-chip act" onclick="setFilter('all',this)">All</button>
+      <button class="filter-chip" onclick="setFilter('top',this)">⭐ Top Rated</button>
+      <button class="filter-chip" onclick="setFilter('budget',this)">💚 Under Budget</button>
+      <button class="filter-chip" onclick="setFilter('fast',this)">⚡ Fastest</button>
+      <button class="filter-chip" onclick="setFilter('specialist',this)">🎯 Specialist</button>
+      <div style="margin-left:auto;display:flex;gap:6px;align-items:center;">
+        <span style="font-family:'DM Sans',sans-serif;color:rgba(255,250,245,.5);font-size:12px;">Sort:</span>
+        <select id="sort-select" onchange="sortMatches()" style="padding:7px 12px;border-radius:10px;font-family:'DM Sans',sans-serif;font-size:12px;background:rgba(255,252,247,.08);color:rgba(255,250,245,.8);border:1px solid rgba(200,149,108,.3);outline:none;">
+          <option value="score">Best Match</option>
+          <option value="rating">Highest Rated</option>
+          <option value="price">Lowest Price</option>
+          <option value="speed">Fastest</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Skeleton loaders -->
+    <div id="skeleton-wrap" style="display:flex;flex-direction:column;gap:14px;">
+      <div style="height:110px;border-radius:20px;" class="skeleton"></div>
+      <div style="height:110px;border-radius:20px;" class="skeleton"></div>
+      <div style="height:110px;border-radius:20px;" class="skeleton"></div>
+    </div>
+
+    <!-- Match cards -->
+    <div id="matches-container" style="display:none;flex-direction:column;gap:14px;"></div>
+
+    <!-- No matches -->
+    <div id="no-matches" style="display:none;text-align:center;padding:48px 0;">
+      <div style="font-size:56px;margin-bottom:12px;">🔍</div>
+      <p style="font-family:'Playfair Display',serif;color:rgba(255,250,245,.7);font-size:20px;font-weight:600;margin:0 0 8px;">No matches found</p>
+      <p style="font-family:'DM Sans',sans-serif;color:rgba(255,250,245,.45);font-size:14px;margin:0 0 20px;">Try adjusting the filters above</p>
+      <button class="btn-outline" onclick="setFilter('all',null)" style="color:rgba(255,250,245,.7);border-color:rgba(255,250,245,.3);">Show All Bakers</button>
+    </div>
+
+    <!-- Footer CTA -->
+    <div id="footer-cta" style="display:none;text-align:center;padding:32px 0 16px;">
+      <p style="font-family:'DM Sans',sans-serif;color:rgba(255,250,245,.5);font-size:13px;margin:0 0 12px;">Want to see all bids directly from bakers?</p>
+      <button class="btn-outline" onclick="goToCompareBids()" style="color:rgba(255,250,245,.7);border-color:rgba(255,250,245,.3);">View All Bids →</button>
+    </div>
+
+  </div><!-- /content -->
+</div>
+
+<!-- Detail overlay -->
+<div id="detail-overlay" onclick="closeDetail(event)">
+  <div id="detail-panel">
+    <div id="detail-content"></div>
+  </div>
+</div>
+
+<script>
+  // =========================================================
+  // Mock baker database (in production: fetch from /bakers/:id)
+  // =========================================================
+  const MOCK_BAKERS = [
+    {
+      baker_id: 101, name: 'Celeste Ong', bakery: "Celeste's Artisan Cakes", location: 'Tiong Bahru',
+      avatar: 'C', rating: 4.9, reviews: 58, speciality: ['birthday-cake','wedding-cake','occasion-cake'],
+      since: 2020, dietary: ['Vegan','Gluten-free'], leadDays: 4,
+      bio: 'Multi-award winning sugar artist. My fondant florals have appeared in Tatler Homes and The Straits Times.',
+      portfolio: ['🎂','🌸','💒'], acceptsCustom: true,
+      priceMultiplier: 0.95, strengths: ['Floral design','Tiered cakes','Custom toppers'],
+    },
+    {
+      baker_id: 102, name: 'Marcus Lim', bakery: 'Heirloom Bakes', location: 'Holland Village',
+      avatar: 'M', rating: 4.7, reviews: 43, speciality: ['bread','pastry','biscuit'],
+      since: 2019, dietary: ['Dairy-free'], leadDays: 2,
+      bio: 'Trained at Le Cordon Bleu Paris. Sourdough and laminated doughs are my daily joy.',
+      portfolio: ['🍞','🥐','🫓'], acceptsCustom: false,
+      priceMultiplier: 0.88, strengths: ['Sourdough','French pastry','Fast delivery'],
+    },
+    {
+      baker_id: 103, name: 'Priya Sharma', bakery: 'Sweet Roots Patisserie', location: 'Serangoon',
+      avatar: 'P', rating: 4.8, reviews: 72, speciality: ['cupcakes','cookies','birthday-cake'],
+      since: 2018, dietary: ['Vegan','Nut-free','Halal'],
+      leadDays: 3, bio: 'Specialising in allergy-friendly bakes without compromising on flavour. MUIS-certified halal kitchen.',
+      portfolio: ['🧁','🍪','🎂'], acceptsCustom: true,
+      priceMultiplier: 0.92, strengths: ['Halal-certified','Allergy-friendly','Cupcake towers'],
+    },
+    {
+      baker_id: 104, name: 'James Tan', bakery: 'The Flour Studio', location: 'Buona Vista',
+      avatar: 'J', rating: 4.6, reviews: 29, speciality: ['wedding-cake','occasion-cake','birthday-cake'],
+      since: 2022, dietary: ['Gluten-free'],
+      leadDays: 7, bio: 'Former architecture student turned cake artist. Every cake is a structure worth photographing.',
+      portfolio: ['💒','🎉','🎂'], acceptsCustom: true,
+      priceMultiplier: 1.05, strengths: ['Geometric design','Sculpted cakes','Minimalist style'],
+    },
+    {
+      baker_id: 105, name: 'Amy Chen', bakery: 'Crème & Crumble', location: 'Katong',
+      avatar: 'A', rating: 4.5, reviews: 35, speciality: ['pastry','cupcakes','cookies'],
+      since: 2021, dietary: ['Dairy-free','Sugar-free'],
+      leadDays: 2, bio: 'Choux, tarts, and everything delicate. Same-week orders welcome for smaller pieces.',
+      portfolio: ['🥐','🧁','🍪'], acceptsCustom: true,
+      priceMultiplier: 0.82, strengths: ['Quick turnaround','Pastry boxes','Dietary options'],
+    },
+  ];
+
+  // =========================================================
+  // Scoring algorithm
+  // =========================================================
+  function scoreBaker(baker, request) {
+    let score = 50; // base
+    const reasons = [];
+
+    // Speciality match
+    const variety = request.variety || 'occasion-cake';
+    if (baker.speciality.includes(variety)) { score += 22; reasons.push('Specialises in this bake'); }
+    else if (baker.speciality.some(s => s.includes('cake') && variety.includes('cake'))) { score += 10; reasons.push('General cake experience'); }
+
+    // Rating boost
+    if (baker.rating >= 4.8) { score += 14; reasons.push('Top-rated baker'); }
+    else if (baker.rating >= 4.5) { score += 8; }
+
+    // Budget fit
+    if (request.budget) {
+      const estimated = request.budget * baker.priceMultiplier;
+      if (estimated <= request.budget) { score += 10; reasons.push('Within your budget'); }
+    }
+
+    // Lead time
+    if (request.deadline) {
+      const daysLeft = SmartBakers.utils.daysUntil(request.deadline) || 30;
+      if (baker.leadDays <= daysLeft * 0.6) { score += 10; reasons.push('Comfortable lead time'); }
+      else if (baker.leadDays <= daysLeft) { score += 5; }
+    }
+
+    // Dietary
+    const requestDietary = request.dietary || [];
+    const matchedDiet = requestDietary.filter(d => baker.dietary.some(bd => bd.toLowerCase().includes(d.toLowerCase())));
+    if (matchedDiet.length) { score += 8 * matchedDiet.length; reasons.push('Matches dietary needs'); }
+
+    // Reviews volume → confidence
+    if (baker.reviews >= 50) { score += 5; reasons.push('Many verified reviews'); }
+    else if (baker.reviews >= 25) { score += 2; }
+
+    // Accepts custom
+    if (baker.acceptsCustom) { score += 4; reasons.push('Accepts custom requests'); }
+
+    return { baker, score: Math.min(score, 100), reasons: reasons.slice(0, 3) };
+  }
+
+  // =========================================================
+  // Page state
+  // =========================================================
+  let request = null;
+  let allMatches = [];
+  let activeFilter = 'all';
+
+  function setFilter(f, btn) {
+    activeFilter = f;
+    document.querySelectorAll('.filter-chip').forEach(b => b.classList.remove('act'));
+    if (btn) btn.classList.add('act');
+    else { const all = document.querySelector('.filter-chip'); if (all) all.classList.add('act'); }
+    renderMatches();
+  }
+
+  function sortMatches() {
+    const sort = document.getElementById('sort-select').value;
+    if (sort === 'score')  allMatches.sort((a, b) => b.score - a.score);
+    if (sort === 'rating') allMatches.sort((a, b) => b.baker.rating - a.baker.rating);
+    if (sort === 'price')  allMatches.sort((a, b) => a.baker.priceMultiplier - b.baker.priceMultiplier);
+    if (sort === 'speed')  allMatches.sort((a, b) => a.baker.leadDays - b.baker.leadDays);
+    renderMatches();
+  }
+
+  function renderMatches() {
+    let list = [...allMatches];
+    if (activeFilter === 'top')        list = list.filter(m => m.baker.rating >= 4.7);
+    if (activeFilter === 'budget')     list = list.filter(m => request && request.budget && m.baker.priceMultiplier <= 1);
+    if (activeFilter === 'fast')       list = list.filter(m => m.baker.leadDays <= 3);
+    if (activeFilter === 'specialist') list = list.filter(m => m.reasons.some(r => r.toLowerCase().includes('specialise')));
+
+    const container = document.getElementById('matches-container');
+    const noMatch   = document.getElementById('no-matches');
+
+    if (!list.length) {
+      container.innerHTML = '';
+      noMatch.style.display = 'block';
+      return;
+    }
+    noMatch.style.display = 'none';
+
+    container.innerHTML = list.map((match, idx) => renderMatchCard(match, idx)).join('');
+  }
+
+  function renderMatchCard(match, idx) {
+    const { baker, score, reasons } = match;
+    const isTop = idx === 0 && score >= 75;
+    const budgetEst = request && request.budget ? Math.round(request.budget * baker.priceMultiplier) : null;
+    const scoreColour = score >= 80 ? '#6b8f5e' : score >= 65 ? '#c8956c' : '#8d6e63';
+    const circumference = 2 * Math.PI * 24;
+    const dash = (score / 100) * circumference;
+    const stars = Array.from({length:5}, (_, i) => `<span class="star${i < Math.round(baker.rating) ? '' : ' empty'}">★</span>`).join('');
+
+    return `
+      <div class="match-card pop ${isTop ? 'top-pick' : ''}" style="animation-delay:${idx * 0.07}s;" onclick="openDetail(${baker.baker_id})">
+        ${isTop ? `<div style="position:absolute;top:-1px;left:20px;background:linear-gradient(135deg,#c8956c,#a67c52);color:#fffaf5;font-family:'DM Sans',sans-serif;font-size:11px;font-weight:700;padding:4px 12px;border-radius:0 0 10px 10px;">⭐ Best Match</div>` : ''}
+        <div style="display:flex;gap:16px;align-items:center;${isTop ? 'margin-top:10px;' : ''}">
+
+          <!-- Avatar -->
+          <div style="width:52px;height:52px;border-radius:14px;background:linear-gradient(135deg,#c8956c,#a67c52);display:flex;align-items:center;justify-content:center;color:#fffaf5;font-family:'Playfair Display',serif;font-size:22px;font-weight:700;flex-shrink:0;">
+            ${SmartBakers.utils.escHtml(baker.avatar)}
+          </div>
+
+          <!-- Info -->
+          <div style="flex:1;min-width:0;">
+            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:2px;">
+              <p style="font-family:'Playfair Display',serif;color:#3e2723;font-size:18px;font-weight:700;margin:0;">${SmartBakers.utils.escHtml(baker.name)}</p>
+              <span style="font-family:'DM Sans',sans-serif;font-size:12px;color:#a1887f;">· ${SmartBakers.utils.escHtml(baker.location)}</span>
+            </div>
+            <p style="font-family:'DM Sans',sans-serif;color:#8d6e63;font-size:13px;margin:0 0 8px;">${SmartBakers.utils.escHtml(baker.bakery)}</p>
+            <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;">
+              <span style="font-size:13px;">${stars}</span>
+              <span style="font-family:'DM Sans',sans-serif;font-size:13px;font-weight:700;color:#3e2723;">${baker.rating}</span>
+              <span style="font-family:'DM Sans',sans-serif;font-size:12px;color:#a1887f;">(${baker.reviews} reviews)</span>
+            </div>
+            <!-- Reason pills -->
+            <div style="display:flex;gap:6px;flex-wrap:wrap;">
+              ${reasons.map(r => `<span class="reason-pill">✓ ${SmartBakers.utils.escHtml(r)}</span>`).join('')}
+              ${baker.leadDays <= 2 ? `<span class="reason-pill" style="background:rgba(107,143,94,.08);color:#4a7c3f;border-color:rgba(107,143,94,.2);">⚡ ${baker.leadDays}-day turnaround</span>` : ''}
+            </div>
+          </div>
+
+          <!-- Score ring + CTA -->
+          <div style="display:flex;flex-direction:column;align-items:center;gap:10px;flex-shrink:0;">
+            <div class="score-ring">
+              <svg class="score-svg" viewBox="0 0 60 60" width="60" height="60">
+                <circle cx="30" cy="30" r="24" fill="none" stroke="rgba(200,149,108,.12)" stroke-width="5"/>
+                <circle cx="30" cy="30" r="24" fill="none" stroke="${scoreColour}" stroke-width="5"
+                  stroke-dasharray="${dash} ${circumference}" stroke-linecap="round"/>
+              </svg>
+              <span class="score-val" style="color:${scoreColour};">${score}%</span>
+            </div>
+            <div style="text-align:center;">
+              ${budgetEst ? `<p style="font-family:'Playfair Display',serif;color:#c8956c;font-size:18px;font-weight:700;margin:0;">~$${budgetEst}</p>
+              <p style="font-family:'DM Sans',sans-serif;font-size:11px;color:#a1887f;margin:2px 0 0;">est. quote</p>` : ''}
+            </div>
+            <button onclick="inviteBaker(event,${baker.baker_id})" class="btn-primary" style="padding:9px 18px;font-size:13px;">Invite →</button>
+          </div>
+        </div>
+      </div>`;
+  }
+
+  // =========================================================
+  // Detail overlay
+  // =========================================================
+  function openDetail(bakerId) {
+    const match = allMatches.find(m => m.baker.baker_id === bakerId);
+    if (!match) return;
+    const { baker, score, reasons } = match;
+    const stars = Array.from({length:5}, (_, i) => `<span class="star${i < Math.round(baker.rating) ? '' : ' empty'}">★</span>`).join('');
+    const budgetEst = request && request.budget ? Math.round(request.budget * baker.priceMultiplier) : null;
+    const scoreColour = score >= 80 ? '#6b8f5e' : score >= 65 ? '#c8956c' : '#8d6e63';
+
+    document.getElementById('detail-content').innerHTML = `
+      <div style="background:linear-gradient(135deg,#3e2723,#5d4037);padding:28px 28px 24px;border-radius:24px 24px 0 0;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+          <div style="display:flex;align-items:center;gap:12px;">
+            <div style="width:56px;height:56px;border-radius:14px;background:linear-gradient(135deg,#c8956c,#a67c52);display:flex;align-items:center;justify-content:center;color:#fffaf5;font-family:'Playfair Display',serif;font-size:24px;font-weight:700;">${SmartBakers.utils.escHtml(baker.avatar)}</div>
+            <div>
+              <p style="font-family:'Playfair Display',serif;color:#fffaf5;font-size:20px;font-weight:700;margin:0;">${SmartBakers.utils.escHtml(baker.name)}</p>
+              <p style="font-family:'DM Sans',sans-serif;color:rgba(255,250,245,.7);font-size:13px;margin:4px 0 0;">${SmartBakers.utils.escHtml(baker.bakery)}</p>
+            </div>
+          </div>
+          <button onclick="closeDetailBtn()" style="background:rgba(255,255,255,.12);border:none;color:#fffaf5;width:32px;height:32px;border-radius:999px;cursor:pointer;font-size:16px;">×</button>
+        </div>
+        <div style="display:flex;gap:16px;flex-wrap:wrap;">
+          <div style="display:flex;align-items:center;gap:6px;"><span style="font-size:13px;">${stars}</span><span style="font-family:'DM Sans',sans-serif;font-size:13px;font-weight:700;color:#fffaf5;">${baker.rating}</span><span style="font-family:'DM Sans',sans-serif;font-size:12px;color:rgba(255,250,245,.6);">(${baker.reviews})</span></div>
+          <span style="font-family:'DM Sans',sans-serif;font-size:12px;color:rgba(255,250,245,.6);">📍 ${SmartBakers.utils.escHtml(baker.location)}</span>
+          <span style="font-family:'DM Sans',sans-serif;font-size:12px;color:rgba(255,250,245,.6);">🗓 Baking since ${baker.since}</span>
+          <span style="font-family:'DM Sans',sans-serif;font-size:12px;color:rgba(255,250,245,.6);">⏱ ${baker.leadDays}-day lead</span>
+        </div>
+      </div>
+      <div style="padding:24px 28px;">
+        <!-- AI score breakdown -->
+        <div style="background:rgba(200,149,108,.06);border:1px solid rgba(200,149,108,.18);border-radius:14px;padding:16px 18px;margin-bottom:20px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+            <p style="font-family:'DM Sans',sans-serif;font-size:13px;font-weight:700;color:#3e2723;margin:0;">🤖 AI Match Score</p>
+            <span style="font-family:'Playfair Display',serif;font-size:22px;font-weight:700;color:${scoreColour};">${score}%</span>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:6px;">
+            ${reasons.map(r => `<div style="display:flex;align-items:center;gap:8px;"><span style="color:#6b8f5e;font-size:14px;">✓</span><span style="font-family:'DM Sans',sans-serif;font-size:13px;color:#5c3d2e;">${SmartBakers.utils.escHtml(r)}</span></div>`).join('')}
+          </div>
+        </div>
+
+        <!-- Bio -->
+        <div style="margin-bottom:18px;">
+          <p style="font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;color:#a1887f;text-transform:uppercase;letter-spacing:.5px;margin:0 0 8px;">About</p>
+          <p style="font-family:'DM Sans',sans-serif;font-size:14px;color:#5c3d2e;line-height:1.6;margin:0;">${SmartBakers.utils.escHtml(baker.bio)}</p>
+        </div>
+
+        <!-- Strengths -->
+        <div style="margin-bottom:18px;">
+          <p style="font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;color:#a1887f;text-transform:uppercase;letter-spacing:.5px;margin:0 0 8px;">Strengths</p>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            ${baker.strengths.map(s => `<span class="badge" style="background:rgba(200,149,108,.1);color:#8d6e63;border:1px solid rgba(200,149,108,.2);">🎯 ${SmartBakers.utils.escHtml(s)}</span>`).join('')}
+          </div>
+        </div>
+
+        <!-- Dietary -->
+        ${baker.dietary.length ? `<div style="margin-bottom:18px;">
+          <p style="font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;color:#a1887f;text-transform:uppercase;letter-spacing:.5px;margin:0 0 8px;">Dietary options</p>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">${baker.dietary.map(d => `<span class="badge" style="background:rgba(107,143,94,.1);color:#4a7c3f;border:1px solid rgba(107,143,94,.2);">🌿 ${SmartBakers.utils.escHtml(d)}</span>`).join('')}</div>
+        </div>` : ''}
+
+        <!-- Portfolio strip -->
+        <div style="margin-bottom:24px;">
+          <p style="font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;color:#a1887f;text-transform:uppercase;letter-spacing:.5px;margin:0 0 8px;">Portfolio</p>
+          <div style="display:flex;gap:10px;">
+            ${baker.portfolio.map(e => `<div style="width:72px;height:72px;border-radius:14px;background:rgba(200,149,108,.06);border:1px solid rgba(200,149,108,.18);display:flex;align-items:center;justify-content:center;font-size:32px;">${e}</div>`).join('')}
+          </div>
+        </div>
+
+        <!-- Est. price -->
+        ${budgetEst ? `<div style="background:rgba(200,149,108,.06);border:1px solid rgba(200,149,108,.15);border-radius:12px;padding:14px 16px;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;">
+          <div>
+            <p style="font-family:'DM Sans',sans-serif;font-size:12px;color:#a1887f;margin:0 0 2px;">Estimated quote for your request</p>
+            <p style="font-family:'DM Sans',sans-serif;font-size:12px;color:#a1887f;margin:0;">Based on your budget of ${SmartBakers.utils.formatCurrency(request.budget)}</p>
+          </div>
+          <p style="font-family:'Playfair Display',serif;color:#c8956c;font-size:26px;font-weight:700;margin:0;">~$${budgetEst}</p>
+        </div>` : ''}
+
+        <!-- CTAs -->
+        <div style="display:flex;gap:10px;">
+          <button onclick="inviteBaker(null,${baker.baker_id})" class="btn-primary" style="flex:1;">✉ Invite to Bid</button>
+          <button onclick="closeDetailBtn()" class="btn-outline" style="flex:1;">Close</button>
+        </div>
+      </div>`;
+
+    document.getElementById('detail-overlay').classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeDetail(e) {
+    if (e && !document.getElementById('detail-panel').contains(e.target)) closeDetailBtn();
+  }
+  function closeDetailBtn() {
+    document.getElementById('detail-overlay').classList.remove('open');
+    document.body.style.overflow = '';
+  }
+
+  // =========================================================
+  // Invite baker
+  // =========================================================
+  function inviteBaker(e, bakerId) {
+    if (e) { e.stopPropagation(); }
+    const match = allMatches.find(m => m.baker.baker_id === bakerId);
+    if (!match) return;
+    SmartBakers.ui.toast(`✉ Invitation sent to ${match.baker.name}!`, 'success');
+    closeDetailBtn();
+  }
+
+  function goToCompareBids() {
+    const requestId = SmartBakers.routing.currentRequestId();
+    if (requestId) {
+      window.location.href = SmartBakers.routing.requestUrl('customer_bid_accept.html', requestId);
+    } else {
+      window.location.href = 'main_page_portfolio.html';
+    }
+  }
+
+  // =========================================================
+  // Init
+  // =========================================================
+  document.addEventListener('DOMContentLoaded', async () => {
+    const requestId = SmartBakers.routing.currentRequestId();
+
+    // Load request (demo: use mock if no backend)
+    if (requestId) {
+      try {
+        request = await SmartBakers.api.getRequest(requestId);
+      } catch (_) {
+        // Demo fallback
+        request = {
+          request_id: requestId, title: 'My Baking Request', description: 'A lovely custom cake',
+          budget: 200, deadline: new Date(Date.now() + 14 * 864e5).toISOString(),
+          variety: 'birthday-cake', dietary: [], emoji: '🎂',
+        };
+      }
+    } else {
+      // Demo request
+      request = {
+        request_id: 0, title: 'Demo: Custom Birthday Cake',
+        description: 'A 3-tier vanilla sponge with floral fondant decorations for 30 guests.',
+        budget: 280, deadline: new Date(Date.now() + 10 * 864e5).toISOString(),
+        variety: 'birthday-cake', dietary: ['Gluten-free'], emoji: '🎂',
+      };
+    }
+
+    // Populate header
+    document.getElementById('bc-request').textContent = request.title || 'Request';
+    document.getElementById('req-emoji').textContent  = request.emoji || '🎂';
+    document.getElementById('req-title').textContent  = request.title || '—';
+    document.getElementById('req-desc').textContent   = (request.details || request.description || '').slice(0, 140) + '…';
+    document.getElementById('req-budget').textContent = request.budget ? SmartBakers.utils.formatCurrency(request.budget) : '—';
+
+    const daysLeft = SmartBakers.utils.daysUntil(request.deadline);
+    const badges = [];
+    if (request.variety) badges.push(`<span style="display:inline-block;padding:4px 10px;border-radius:8px;font-size:11px;font-weight:600;background:rgba(200,149,108,.12);color:#8d6e63;border:1px solid rgba(200,149,108,.2);font-family:'DM Sans',sans-serif;">${SmartBakers.utils.sentenceCase(request.variety)}</span>`);
+    if (daysLeft !== null) badges.push(`<span style="display:inline-block;padding:4px 10px;border-radius:8px;font-size:11px;font-weight:600;background:rgba(200,149,108,.12);color:#8d6e63;border:1px solid rgba(200,149,108,.2);font-family:'DM Sans',sans-serif;">⏰ ${daysLeft}d left</span>`);
+    (request.dietary || []).forEach(d => badges.push(`<span style="display:inline-block;padding:4px 10px;border-radius:8px;font-size:11px;font-weight:600;background:rgba(107,143,94,.1);color:#4a7c3f;border:1px solid rgba(107,143,94,.2);font-family:'DM Sans',sans-serif;">🌿 ${SmartBakers.utils.escHtml(d)}</span>`));
+    document.getElementById('req-badges').innerHTML = badges.join('');
+
+    // AI "thinking" animation
+    const steps = [
+      ['Analysing your request…', 'Checking baker profiles, ratings, speciality, and past performance'],
+      ['Scoring speciality matches…', 'Comparing baker portfolios and customer reviews against your needs'],
+      ['Calculating budget fit…', 'Estimating likely quotes based on baker pricing history'],
+      ['Ranking top suggestions…', 'Finalising your personalised match list'],
+    ];
+
+    let step = 0;
+    const statusText = document.getElementById('ai-status-text');
+    const statusSub  = document.getElementById('ai-status-sub');
+    const interval = setInterval(() => {
+      step = (step + 1) % steps.length;
+      statusText.textContent = steps[step][0];
+      statusSub.textContent  = steps[step][1];
+    }, 700);
+
+    // Score all bakers
+    await new Promise(r => setTimeout(r, 2800));
+    clearInterval(interval);
+
+    allMatches = MOCK_BAKERS
+      .map(baker => scoreBaker(baker, request))
+      .sort((a, b) => b.score - a.score);
+
+    // Done state
+    document.getElementById('ai-loading').style.display   = 'none';
+    document.getElementById('ai-done-check').style.display = 'flex';
+    statusText.textContent = `Found ${allMatches.length} baker matches for your request`;
+    statusSub.textContent  = 'Results ranked by AI compatibility score — best match first';
+    document.getElementById('sub-header').textContent = `${allMatches.length} bakers matched using Smart Bakers AI`;
+
+    // Show matches, hide skeleton
+    document.getElementById('skeleton-wrap').style.display   = 'none';
+    const container = document.getElementById('matches-container');
+    container.style.display = 'flex';
+    document.getElementById('footer-cta').style.display = 'block';
+
+    renderMatches();
+  });
+</script>
+</body>
+</html>

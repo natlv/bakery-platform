@@ -1,0 +1,445 @@
+<!doctype html>
+<html lang="en" class="h-full">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Smart Bakers — Create Account</title>
+  <script src="master_controller.js"></script>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    html,body{height:100%;margin:0;}*{box-sizing:border-box;}
+    .flour-bg{
+      background:
+        radial-gradient(ellipse at 20% 50%,rgba(255,248,240,.15) 0%,transparent 50%),
+        radial-gradient(ellipse at 80% 20%,rgba(210,180,140,.10) 0%,transparent 40%),
+        linear-gradient(135deg,#3d2b1f 0%,#5c3d2e 30%,#4a3228 60%,#6b4636 100%);
+    }
+    .flour-dust{position:fixed;inset:0;opacity:.1;pointer-events:none;
+      background-image:
+        radial-gradient(circle at 12% 20%,#fff 1px,transparent 1px),
+        radial-gradient(circle at 40% 70%,#fff .8px,transparent .8px),
+        radial-gradient(circle at 70% 35%,#fff 1.5px,transparent 1.5px),
+        radial-gradient(circle at 85% 80%,#fff 1px,transparent 1px),
+        radial-gradient(circle at 55% 10%,#fff .6px,transparent .6px);
+    }
+    .glass{background:rgba(255,252,247,.93);backdrop-filter:blur(24px);border:1px solid rgba(255,255,255,.6);}
+    .inp{width:100%;padding:12px 16px;border:1px solid rgba(200,149,108,.3);border-radius:12px;font-family:'DM Sans',sans-serif;color:#3d2b1f;font-size:14px;background:rgba(255,255,255,.7);outline:none;transition:all .2s;}
+    .inp:focus{border-color:#c8956c;box-shadow:0 0 0 3px rgba(200,149,108,.12);background:#fff;}
+    .inp::placeholder{color:#b8a090;}
+    .inp.err-field{border-color:#e53935;background:rgba(229,57,53,.02);}
+    .btn-primary{width:100%;padding:14px;background:linear-gradient(135deg,#b47846,#8d5e30);color:#fffaf5;border:none;border-radius:14px;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:600;cursor:pointer;transition:all .3s cubic-bezier(.34,1.56,.64,1);box-shadow:0 8px 20px rgba(180,120,70,.25);}
+    .btn-primary:hover{transform:translateY(-2px);box-shadow:0 12px 28px rgba(180,120,70,.35);}
+    .btn-primary:active{transform:translateY(0);}
+    .btn-primary:disabled{opacity:.6;cursor:not-allowed;transform:none;box-shadow:none;}
+    .tab-btn{padding:8px 20px;border-radius:10px;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;cursor:pointer;border:none;transition:all .2s;}
+    .tab-active{background:linear-gradient(135deg,#b47846,#8d5e30);color:#fffaf5;}
+    .tab-inactive{background:transparent;color:#a1887f;}
+    .err-msg{color:#e53935;font-family:'DM Sans',sans-serif;font-size:12px;margin-top:4px;display:none;}
+    .strength-bar{height:4px;border-radius:4px;transition:all .3s;}
+    .step-dot{width:8px;height:8px;border-radius:999px;transition:all .3s;}
+    .interest-chip{padding:8px 14px;border-radius:10px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;cursor:pointer;border:1px solid rgba(200,149,108,.3);background:transparent;color:#8d6e63;transition:all .2s;}
+    .interest-chip.selected{background:rgba(200,149,108,.12);color:#b47846;border-color:rgba(200,149,108,.5);}
+    @keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+    @keyframes fadeIn{from{opacity:0}to{opacity:1}}
+    .a1{animation:fadeUp .6s ease-out .05s both}
+    .a2{animation:fadeUp .6s ease-out .15s both}
+    .a3{animation:fadeUp .6s ease-out .25s both}
+    .a4{animation:fadeUp .6s ease-out .35s both}
+    .a5{animation:fadeUp .6s ease-out .45s both}
+    .slide-in{animation:fadeUp .4s ease-out both;}
+    .success-ring{animation:pulse-ring 1.5s cubic-bezier(.4,0,.6,1) infinite;}
+    @keyframes pulse-ring{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.7;transform:scale(1.06)}}
+    /* progress bar */
+    #prog-bar{transition:width .4s cubic-bezier(.34,1.56,.64,1);}
+  </style>
+</head>
+<body class="h-full">
+<main class="flour-bg relative w-full min-h-full flex items-center justify-center overflow-auto p-4 py-10">
+  <div class="flour-dust"></div>
+
+  <div class="glass a1 relative z-10 rounded-3xl shadow-2xl w-full max-w-lg mx-auto overflow-hidden">
+
+    <!-- Progress Header -->
+    <div style="padding:0;background:linear-gradient(135deg,#3e2723,#5d4037);">
+      <div style="height:4px;background:rgba(255,255,255,.15);">
+        <div id="prog-bar" style="height:100%;width:33%;background:linear-gradient(90deg,#c8956c,#f5c89a);border-radius:999px;"></div>
+      </div>
+      <div style="padding:20px 28px 18px;display:flex;align-items:center;justify-content:space-between;">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <div style="width:36px;height:36px;background:linear-gradient(135deg,#c8956c,#a67c52);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;">🍞</div>
+          <span style="font-family:'Playfair Display',serif;color:#fffaf5;font-size:18px;font-weight:700;">Smart Bakers</span>
+        </div>
+        <div style="display:flex;gap:6px;align-items:center;">
+          <div class="step-dot" id="dot1" style="background:#c8956c;width:10px;height:10px;"></div>
+          <div class="step-dot" id="dot2" style="background:rgba(255,255,255,.3);"></div>
+          <div class="step-dot" id="dot3" style="background:rgba(255,255,255,.3);"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 1: Role + Account -->
+    <div id="step1" class="slide-in" style="padding:32px 36px 36px;">
+      <h1 style="font-family:'Playfair Display',serif;font-size:28px;font-weight:700;color:#3d2b1f;margin:0 0 4px;">Create your account</h1>
+      <p style="font-family:'DM Sans',sans-serif;font-size:14px;color:#8b7355;margin:0 0 24px;">Join thousands of bakers and customers on Smart Bakers</p>
+
+      <!-- Role picker -->
+      <div style="margin-bottom:22px;">
+        <label style="font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;color:#3d2b1f;display:block;margin-bottom:10px;">I am a…</label>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+          <button id="role-baker" onclick="selectRole('Baker')" style="padding:14px 12px;border-radius:14px;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;cursor:pointer;border:2px solid rgba(200,149,108,.4);background:rgba(200,149,108,.06);color:#8d6e63;transition:all .2s;display:flex;align-items:center;gap:8px;justify-content:center;">
+            <span style="font-size:20px;">🧑‍🍳</span> Baker
+          </button>
+          <button id="role-customer" onclick="selectRole('Customer')" style="padding:14px 12px;border-radius:14px;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;cursor:pointer;border:2px solid rgba(200,149,108,.4);background:rgba(200,149,108,.06);color:#8d6e63;transition:all .2s;display:flex;align-items:center;gap:8px;justify-content:center;">
+            <span style="font-size:20px;">🛒</span> Customer
+          </button>
+        </div>
+        <p id="role-err" class="err-msg">Please select a role to continue.</p>
+      </div>
+
+      <!-- Name row -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">
+        <div>
+          <label style="font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;color:#3d2b1f;display:block;margin-bottom:6px;">First Name</label>
+          <input class="inp" type="text" id="reg-first" placeholder="Ada" autocomplete="given-name">
+          <p class="err-msg" id="first-err">First name is required.</p>
+        </div>
+        <div>
+          <label style="font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;color:#3d2b1f;display:block;margin-bottom:6px;">Last Name</label>
+          <input class="inp" type="text" id="reg-last" placeholder="Lovelace" autocomplete="family-name">
+          <p class="err-msg" id="last-err">Last name is required.</p>
+        </div>
+      </div>
+
+      <div style="margin-bottom:16px;">
+        <label style="font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;color:#3d2b1f;display:block;margin-bottom:6px;">Email Address</label>
+        <input class="inp" type="email" id="reg-email" placeholder="you@example.com" autocomplete="email">
+        <p class="err-msg" id="email-err">Please enter a valid email.</p>
+      </div>
+
+      <div style="margin-bottom:6px;">
+        <label style="font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;color:#3d2b1f;display:block;margin-bottom:6px;">Password</label>
+        <div style="position:relative;">
+          <input class="inp" type="password" id="reg-pwd" placeholder="Min. 8 characters" autocomplete="new-password" oninput="checkStrength(this.value)" style="padding-right:44px;">
+          <button onclick="togglePwd('reg-pwd')" style="position:absolute;right:14px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:#a1887f;font-size:16px;">👁</button>
+        </div>
+        <p class="err-msg" id="pwd-err">Password must be at least 8 characters.</p>
+      </div>
+
+      <!-- Strength bar -->
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;">
+        <div style="flex:1;display:flex;gap:4px;">
+          <div class="strength-bar" id="sb1" style="flex:1;background:rgba(200,149,108,.15);"></div>
+          <div class="strength-bar" id="sb2" style="flex:1;background:rgba(200,149,108,.15);"></div>
+          <div class="strength-bar" id="sb3" style="flex:1;background:rgba(200,149,108,.15);"></div>
+          <div class="strength-bar" id="sb4" style="flex:1;background:rgba(200,149,108,.15);"></div>
+        </div>
+        <span id="strength-label" style="font-family:'DM Sans',sans-serif;font-size:11px;color:#a1887f;min-width:40px;"></span>
+      </div>
+
+      <div style="margin-bottom:24px;">
+        <label style="font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;color:#3d2b1f;display:block;margin-bottom:6px;">Confirm Password</label>
+        <input class="inp" type="password" id="reg-pwd2" placeholder="Re-enter password" autocomplete="new-password">
+        <p class="err-msg" id="pwd2-err">Passwords do not match.</p>
+      </div>
+
+      <button class="btn-primary" onclick="goStep2()">Continue →</button>
+
+      <p style="text-align:center;font-family:'DM Sans',sans-serif;font-size:13px;color:#8b7355;margin-top:18px;">
+        Already have an account? <a href="login.html" style="color:#b47846;font-weight:600;text-decoration:none;">Sign in</a>
+      </p>
+    </div>
+
+    <!-- STEP 2: Profile details -->
+    <div id="step2" style="display:none;padding:32px 36px 36px;">
+      <button onclick="goStep(1)" style="background:none;border:none;color:#a1887f;font-family:'DM Sans',sans-serif;font-size:13px;cursor:pointer;padding:0;margin-bottom:20px;display:flex;align-items:center;gap:4px;">← Back</button>
+      <h2 style="font-family:'Playfair Display',serif;font-size:24px;font-weight:700;color:#3d2b1f;margin:0 0 4px;" id="step2-title">Tell us about yourself</h2>
+      <p style="font-family:'DM Sans',sans-serif;font-size:14px;color:#8b7355;margin:0 0 24px;" id="step2-sub">Help customers discover your speciality</p>
+
+      <!-- Baker-specific -->
+      <div id="baker-fields">
+        <div style="margin-bottom:16px;">
+          <label style="font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;color:#3d2b1f;display:block;margin-bottom:6px;">Bakery / Display Name</label>
+          <input class="inp" type="text" id="bakery-name" placeholder="e.g. Ada's Artisan Breads">
+          <p class="err-msg" id="bakery-name-err">Please add a display name.</p>
+        </div>
+        <div style="margin-bottom:16px;">
+          <label style="font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;color:#3d2b1f;display:block;margin-bottom:6px;">Location <span style="color:#a1887f;font-weight:400;">(city / neighbourhood)</span></label>
+          <input class="inp" type="text" id="baker-location" placeholder="e.g. Tiong Bahru, Singapore">
+        </div>
+        <div style="margin-bottom:20px;">
+          <label style="font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;color:#3d2b1f;display:block;margin-bottom:10px;">What do you specialise in?</label>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;" id="specialism-chips">
+            <button class="interest-chip" onclick="toggleChip(this)">🎂 Cakes</button>
+            <button class="interest-chip" onclick="toggleChip(this)">🍞 Bread</button>
+            <button class="interest-chip" onclick="toggleChip(this)">🥐 Pastries</button>
+            <button class="interest-chip" onclick="toggleChip(this)">🧁 Cupcakes</button>
+            <button class="interest-chip" onclick="toggleChip(this)">🍪 Cookies</button>
+            <button class="interest-chip" onclick="toggleChip(this)">💒 Weddings</button>
+            <button class="interest-chip" onclick="toggleChip(this)">🌿 Vegan</button>
+            <button class="interest-chip" onclick="toggleChip(this)">🌾 Gluten-Free</button>
+          </div>
+        </div>
+        <div style="margin-bottom:20px;">
+          <label style="font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;color:#3d2b1f;display:block;margin-bottom:6px;">Short bio <span style="color:#a1887f;font-weight:400;">(optional)</span></label>
+          <textarea class="inp" id="baker-bio" rows="3" placeholder="Tell customers a little about your baking journey…" style="resize:none;line-height:1.5;"></textarea>
+        </div>
+      </div>
+
+      <!-- Customer-specific -->
+      <div id="customer-fields" style="display:none;">
+        <div style="margin-bottom:16px;">
+          <label style="font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;color:#3d2b1f;display:block;margin-bottom:6px;">Delivery Address</label>
+          <input class="inp" type="text" id="cust-address" placeholder="Block / Street, Postal Code">
+        </div>
+        <div style="margin-bottom:16px;">
+          <label style="font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;color:#3d2b1f;display:block;margin-bottom:6px;">Phone Number <span style="color:#a1887f;font-weight:400;">(optional)</span></label>
+          <input class="inp" type="tel" id="cust-phone" placeholder="+65 9XXX XXXX">
+        </div>
+        <div style="margin-bottom:20px;">
+          <label style="font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;color:#3d2b1f;display:block;margin-bottom:10px;">What are you typically looking for?</label>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <button class="interest-chip" onclick="toggleChip(this)">🎂 Birthday cakes</button>
+            <button class="interest-chip" onclick="toggleChip(this)">💒 Wedding cakes</button>
+            <button class="interest-chip" onclick="toggleChip(this)">🧁 Cupcakes</button>
+            <button class="interest-chip" onclick="toggleChip(this)">🌿 Vegan options</button>
+            <button class="interest-chip" onclick="toggleChip(this)">🌾 Gluten-free</button>
+            <button class="interest-chip" onclick="toggleChip(this)">🥐 Pastry boxes</button>
+          </div>
+        </div>
+      </div>
+
+      <button class="btn-primary" onclick="goStep3()">Continue →</button>
+    </div>
+
+    <!-- STEP 3: T&Cs + Confirm -->
+    <div id="step3" style="display:none;padding:32px 36px 36px;">
+      <button onclick="goStep(2)" style="background:none;border:none;color:#a1887f;font-family:'DM Sans',sans-serif;font-size:13px;cursor:pointer;padding:0;margin-bottom:20px;display:flex;align-items:center;gap:4px;">← Back</button>
+      <h2 style="font-family:'Playfair Display',serif;font-size:24px;font-weight:700;color:#3d2b1f;margin:0 0 4px;">Almost there!</h2>
+      <p style="font-family:'DM Sans',sans-serif;font-size:14px;color:#8b7355;margin:0 0 24px;">Review the summary and confirm your account</p>
+
+      <!-- Summary card -->
+      <div id="summary-card" style="background:rgba(200,149,108,.06);border:1px solid rgba(200,149,108,.2);border-radius:16px;padding:20px;margin-bottom:20px;">
+        <div style="display:flex;align-items:center;gap:14px;margin-bottom:16px;">
+          <div id="summary-avatar" style="width:48px;height:48px;border-radius:14px;background:linear-gradient(135deg,#c8956c,#a67c52);display:flex;align-items:center;justify-content:center;color:#fffaf5;font-family:'Playfair Display',serif;font-size:22px;font-weight:700;"></div>
+          <div>
+            <p id="summary-name" style="font-family:'Playfair Display',serif;color:#3d2b1f;font-size:18px;font-weight:700;margin:0;"></p>
+            <p id="summary-role-tag" style="font-family:'DM Sans',sans-serif;color:#c8956c;font-size:12px;font-weight:600;margin:4px 0 0;"></p>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <div style="display:flex;align-items:center;gap:10px;">
+            <span style="font-size:16px;">📧</span>
+            <span id="summary-email" style="font-family:'DM Sans',sans-serif;font-size:13px;color:#5c3d2e;"></span>
+          </div>
+          <div id="summary-extra" style="display:flex;align-items:center;gap:10px;"></div>
+        </div>
+      </div>
+
+      <!-- T&Cs -->
+      <div style="margin-bottom:20px;">
+        <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;">
+          <input type="checkbox" id="agree-tos" style="margin-top:2px;accent-color:#c8956c;">
+          <span style="font-family:'DM Sans',sans-serif;font-size:13px;color:#5c3d2e;line-height:1.5;">
+            I agree to the <a href="#" style="color:#b47846;text-decoration:none;font-weight:600;">Terms of Service</a> and <a href="#" style="color:#b47846;text-decoration:none;font-weight:600;">Privacy Policy</a>. I understand how my data will be used on Smart Bakers.
+          </span>
+        </label>
+        <p class="err-msg" id="tos-err" style="margin-top:6px;">You must agree to continue.</p>
+      </div>
+      <div style="margin-bottom:28px;">
+        <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;">
+          <input type="checkbox" id="agree-marketing" style="margin-top:2px;accent-color:#c8956c;">
+          <span style="font-family:'DM Sans',sans-serif;font-size:13px;color:#5c3d2e;line-height:1.5;">
+            Send me tips, new baker announcements, and occasional promotions. <span style="color:#a1887f;">(Optional)</span>
+          </span>
+        </label>
+      </div>
+
+      <button class="btn-primary" id="create-btn" onclick="handleRegister()">Create My Account 🎉</button>
+    </div>
+
+    <!-- SUCCESS state -->
+    <div id="step-success" style="display:none;padding:40px 36px;text-align:center;">
+      <div class="success-ring" style="width:80px;height:80px;background:linear-gradient(135deg,#c8956c,#a67c52);border-radius:999px;display:flex;align-items:center;justify-content:center;font-size:38px;margin:0 auto 20px;">🎉</div>
+      <h2 style="font-family:'Playfair Display',serif;font-size:26px;font-weight:700;color:#3d2b1f;margin:0 0 8px;">You're in!</h2>
+      <p id="success-msg" style="font-family:'DM Sans',sans-serif;font-size:14px;color:#8b7355;margin:0 0 28px;line-height:1.6;"></p>
+      <button class="btn-primary" id="go-home-btn" onclick="">Let's Go →</button>
+    </div>
+
+  </div><!-- /glass card -->
+</main>
+
+<script>
+  let selectedRole = null;
+  let currentStep = 1;
+
+  // --- Role selection ---
+  function selectRole(role) {
+    selectedRole = role;
+    const isBaker = role === 'Baker';
+    document.getElementById('role-baker').style.borderColor = isBaker ? '#c8956c' : 'rgba(200,149,108,.4)';
+    document.getElementById('role-baker').style.background   = isBaker ? 'rgba(200,149,108,.14)' : 'rgba(200,149,108,.06)';
+    document.getElementById('role-baker').style.color        = isBaker ? '#b47846' : '#8d6e63';
+    document.getElementById('role-customer').style.borderColor = !isBaker ? '#c8956c' : 'rgba(200,149,108,.4)';
+    document.getElementById('role-customer').style.background   = !isBaker ? 'rgba(200,149,108,.14)' : 'rgba(200,149,108,.06)';
+    document.getElementById('role-customer').style.color        = !isBaker ? '#b47846' : '#8d6e63';
+    document.getElementById('role-err').style.display = 'none';
+  }
+
+  // --- Password strength ---
+  function checkStrength(val) {
+    const bars = ['sb1','sb2','sb3','sb4'];
+    const label = document.getElementById('strength-label');
+    let score = 0;
+    if (val.length >= 8)  score++;
+    if (/[A-Z]/.test(val)) score++;
+    if (/[0-9]/.test(val)) score++;
+    if (/[^A-Za-z0-9]/.test(val)) score++;
+    const colors = ['#e53935','#f57c00','#fbc02d','#6b8f5e'];
+    const labels = ['Weak','Fair','Good','Strong'];
+    bars.forEach((id, i) => {
+      document.getElementById(id).style.background = i < score ? colors[score - 1] : 'rgba(200,149,108,.15)';
+    });
+    label.textContent = score > 0 ? labels[score - 1] : '';
+    label.style.color = score > 0 ? colors[score - 1] : '#a1887f';
+  }
+
+  function togglePwd(id) {
+    const el = document.getElementById(id);
+    el.type = el.type === 'password' ? 'text' : 'password';
+  }
+
+  function toggleChip(btn) {
+    btn.classList.toggle('selected');
+  }
+
+  // --- Step navigation ---
+  function goStep(n) {
+    [1,2,3].forEach(i => {
+      document.getElementById('step' + i).style.display = i === n ? 'block' : 'none';
+    });
+    document.getElementById('step-success').style.display = 'none';
+    currentStep = n;
+    updateProgress(n);
+    ['dot1','dot2','dot3'].forEach((id, i) => {
+      const dot = document.getElementById(id);
+      dot.style.background = i < n ? '#c8956c' : 'rgba(255,255,255,.3)';
+      dot.style.width  = i + 1 === n ? '10px' : '8px';
+      dot.style.height = i + 1 === n ? '10px' : '8px';
+    });
+  }
+
+  function updateProgress(step) {
+    document.getElementById('prog-bar').style.width = (step / 3 * 100) + '%';
+  }
+
+  function goStep2() {
+    // Validate step 1
+    let ok = true;
+    if (!selectedRole) { document.getElementById('role-err').style.display = 'block'; ok = false; }
+    const first = document.getElementById('reg-first').value.trim();
+    const last  = document.getElementById('reg-last').value.trim();
+    const email = document.getElementById('reg-email').value.trim();
+    const pwd   = document.getElementById('reg-pwd').value;
+    const pwd2  = document.getElementById('reg-pwd2').value;
+    if (!first) { document.getElementById('first-err').style.display = 'block'; ok = false; }
+    else document.getElementById('first-err').style.display = 'none';
+    if (!last) { document.getElementById('last-err').style.display = 'block'; ok = false; }
+    else document.getElementById('last-err').style.display = 'none';
+    if (!email || !email.includes('@')) { document.getElementById('email-err').style.display = 'block'; ok = false; }
+    else document.getElementById('email-err').style.display = 'none';
+    if (pwd.length < 8) { document.getElementById('pwd-err').style.display = 'block'; ok = false; }
+    else document.getElementById('pwd-err').style.display = 'none';
+    if (pwd !== pwd2) { document.getElementById('pwd2-err').style.display = 'block'; ok = false; }
+    else document.getElementById('pwd2-err').style.display = 'none';
+    if (!ok) return;
+
+    // Show correct fields for role
+    document.getElementById('baker-fields').style.display   = selectedRole === 'Baker'    ? 'block' : 'none';
+    document.getElementById('customer-fields').style.display = selectedRole === 'Customer' ? 'block' : 'none';
+    if (selectedRole === 'Baker') {
+      document.getElementById('step2-title').textContent = 'Tell us about your bakery';
+      document.getElementById('step2-sub').textContent   = 'Help customers discover your speciality';
+    } else {
+      document.getElementById('step2-title').textContent = 'A little about you';
+      document.getElementById('step2-sub').textContent   = 'Personalise your Smart Bakers experience';
+    }
+    goStep(2);
+  }
+
+  function goStep3() {
+    if (selectedRole === 'Baker') {
+      const bname = document.getElementById('bakery-name').value.trim();
+      if (!bname) { document.getElementById('bakery-name-err').style.display = 'block'; return; }
+      document.getElementById('bakery-name-err').style.display = 'none';
+    }
+
+    // Populate summary
+    const first = document.getElementById('reg-first').value.trim();
+    const last  = document.getElementById('reg-last').value.trim();
+    const email = document.getElementById('reg-email').value.trim();
+    const fullName = first + ' ' + last;
+
+    document.getElementById('summary-avatar').textContent = first.charAt(0).toUpperCase();
+    document.getElementById('summary-name').textContent   = fullName;
+    document.getElementById('summary-email').textContent  = email;
+    document.getElementById('summary-role-tag').textContent = selectedRole === 'Baker' ? '🧑‍🍳 Baker Account' : '🛒 Customer Account';
+
+    let extra = '';
+    if (selectedRole === 'Baker') {
+      const loc = document.getElementById('baker-location').value.trim();
+      if (loc) extra = `<span style="font-size:16px;">📍</span><span style="font-family:'DM Sans',sans-serif;font-size:13px;color:#5c3d2e;">${SmartBakers.utils.escHtml(loc)}</span>`;
+    } else {
+      const addr = document.getElementById('cust-address').value.trim();
+      if (addr) extra = `<span style="font-size:16px;">🏠</span><span style="font-family:'DM Sans',sans-serif;font-size:13px;color:#5c3d2e;">${SmartBakers.utils.escHtml(addr)}</span>`;
+    }
+    document.getElementById('summary-extra').innerHTML = extra;
+
+    goStep(3);
+  }
+
+  function handleRegister() {
+    if (!document.getElementById('agree-tos').checked) {
+      document.getElementById('tos-err').style.display = 'block'; return;
+    }
+    document.getElementById('tos-err').style.display = 'none';
+
+    const btn = document.getElementById('create-btn');
+    btn.disabled = true;
+    btn.textContent = 'Creating your account…';
+
+    // --- DEMO: simulate API registration ---
+    // In production: POST /api/auth/register { email, password, role, firstName, lastName, ... }
+    setTimeout(() => {
+      const first = document.getElementById('reg-first').value.trim();
+      const last  = document.getElementById('reg-last').value.trim();
+      const email = document.getElementById('reg-email').value.trim();
+      const fullName = first + ' ' + last;
+
+      const userId = 'user_' + Date.now();
+      SmartBakers.session.save(userId, selectedRole, fullName, email);
+
+      // Show success
+      [1,2,3].forEach(i => document.getElementById('step' + i).style.display = 'none');
+      document.getElementById('step-success').style.display = 'block';
+      document.getElementById('prog-bar').style.width = '100%';
+
+      const destPage = selectedRole === 'Baker' ? 'bakery_marketplace_dashboard_search.html' : 'main_page_portfolio.html';
+      document.getElementById('success-msg').textContent =
+        `Welcome to Smart Bakers, ${first}! Your ${selectedRole.toLowerCase()} account is ready. Redirecting you now…`;
+      const homeBtn = document.getElementById('go-home-btn');
+      homeBtn.onclick = () => window.location.href = destPage;
+
+      setTimeout(() => { window.location.href = destPage; }, 2800);
+    }, 1200);
+  }
+
+  // Allow Enter on step 1
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && currentStep === 1) goStep2();
+    if (e.key === 'Enter' && currentStep === 2) goStep3();
+    if (e.key === 'Enter' && currentStep === 3) handleRegister();
+  });
+</script>
+</body>
+</html>

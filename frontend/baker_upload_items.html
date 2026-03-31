@@ -1,0 +1,552 @@
+<!doctype html>
+<html lang="en" class="h-full">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Smart Bakers — Upload Menu Items</title>
+  <script src="master_controller.js"></script>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    html,body{height:100%;margin:0;}*{box-sizing:border-box;}
+    .flour-bg{background:radial-gradient(ellipse at 20% 50%,rgba(255,248,240,.15) 0%,transparent 50%),linear-gradient(135deg,#3e2723 0%,#4e342e 25%,#5d4037 50%,#4e342e 75%,#3e2723 100%);}
+    .flour-dust{position:fixed;inset:0;opacity:.1;pointer-events:none;background-image:radial-gradient(circle at 15% 25%,#fff 1px,transparent 1px),radial-gradient(circle at 75% 35%,#fff 1.5px,transparent 1.5px),radial-gradient(circle at 85% 75%,#fff 1px,transparent 1px),radial-gradient(circle at 30% 80%,#fff .8px,transparent .8px);}
+    .glass{background:rgba(255,252,247,.92);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,.6);}
+    .panel{background:rgba(255,252,247,.96);border:1px solid rgba(200,149,108,.18);border-radius:20px;padding:24px;}
+    .inp{width:100%;padding:11px 14px;border:1px solid rgba(200,149,108,.3);border-radius:11px;font-family:'DM Sans',sans-serif;color:#3e2723;font-size:14px;background:rgba(255,255,255,.8);outline:none;transition:all .2s;}
+    .inp:focus{border-color:#c8956c;box-shadow:0 0 0 3px rgba(200,149,108,.1);}
+    .inp::placeholder{color:#b8a090;}
+    .select-inp{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23a1887f' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center;padding-right:36px;}
+    .btn-primary{padding:13px 28px;background:linear-gradient(135deg,#c8956c,#a67c52);color:#fffaf5;border:none;border-radius:13px;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;cursor:pointer;transition:all .3s cubic-bezier(.34,1.56,.64,1);box-shadow:0 8px 20px rgba(200,149,108,.25);}
+    .btn-primary:hover{transform:translateY(-2px);box-shadow:0 12px 28px rgba(200,149,108,.35);}
+    .btn-primary:disabled{opacity:.5;cursor:not-allowed;transform:none;box-shadow:none;}
+    .btn-outline{padding:11px 22px;background:transparent;color:#8d6e63;border:1px solid rgba(200,149,108,.35);border-radius:12px;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;cursor:pointer;transition:all .2s;}
+    .btn-outline:hover{background:rgba(200,149,108,.07);}
+    .upload-zone{border:2px dashed rgba(200,149,108,.35);border-radius:16px;padding:36px 24px;text-align:center;cursor:pointer;transition:all .25s;background:rgba(200,149,108,.02);}
+    .upload-zone:hover,.upload-zone.drag-over{border-color:#c8956c;background:rgba(200,149,108,.07);}
+    .diet-chip{padding:7px 13px;border-radius:9px;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;cursor:pointer;border:1px solid rgba(200,149,108,.3);background:transparent;color:#8d6e63;transition:all .2s;}
+    .diet-chip.on{background:rgba(107,143,94,.1);color:#4a7c3f;border-color:rgba(107,143,94,.3);}
+    .item-card{background:#fffcf7;border:1px solid rgba(200,149,108,.18);border-radius:16px;padding:16px 18px;display:flex;align-items:center;gap:14px;transition:all .25s;}
+    .item-card:hover{border-color:rgba(200,149,108,.35);box-shadow:0 6px 20px rgba(62,39,35,.06);}
+    .item-thumb{width:64px;height:64px;border-radius:12px;object-fit:cover;background:rgba(200,149,108,.1);display:flex;align-items:center;justify-content:center;font-size:28px;flex-shrink:0;}
+    .badge{display:inline-flex;align-items:center;padding:4px 10px;border-radius:8px;font-size:11px;font-weight:600;font-family:'DM Sans',sans-serif;}
+    .badge-open{background:rgba(107,143,94,.1);color:#4a7c3f;border:1px solid rgba(107,143,94,.2);}
+    .badge-draft{background:rgba(200,149,108,.1);color:#b47846;border:1px solid rgba(200,149,108,.2);}
+    .tab-pill{padding:8px 18px;border-radius:20px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer;border:none;transition:all .2s;}
+    .tab-pill.act{background:linear-gradient(135deg,#c8956c,#a67c52);color:#fffaf5;}
+    .tab-pill.inact{background:rgba(200,149,108,.08);color:#8d6e63;}
+    @keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+    @keyframes popIn{from{opacity:0;transform:scale(.92)}to{opacity:1;transform:scale(1)}}
+    .fu{animation:fadeUp .45s ease-out both;}
+    .pop{animation:popIn .3s cubic-bezier(.34,1.56,.64,1) both;}
+    label.lbl{font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;color:#3e2723;display:block;margin-bottom:6px;}
+    /* Drag ghost highlight */
+    .drag-ghost{opacity:.5;}
+    #preview-img{display:none;width:100%;height:160px;object-fit:cover;border-radius:12px;margin-bottom:8px;}
+  </style>
+</head>
+<body class="h-full">
+<div class="flour-bg h-full w-full flex flex-col relative overflow-auto">
+  <div class="flour-dust"></div>
+
+  <!-- Nav -->
+  <nav data-sb-nav class="glass sticky top-0 z-20 shadow-sm" style="padding:16px 24px;display:flex;align-items:center;justify-content:space-between;position:relative;"></nav>
+
+  <div class="flex-1 w-full max-w-6xl mx-auto px-6 py-8 relative z-10">
+
+    <!-- Header -->
+    <div style="margin-bottom:28px;">
+      <h1 class="fu" style="font-family:'Playfair Display',serif;color:#fffaf5;font-size:34px;font-weight:700;margin:0 0 6px;">My Menu Items</h1>
+      <p class="fu" style="font-family:'DM Sans',sans-serif;color:rgba(255,250,245,.6);font-size:15px;margin:0;animation-delay:.06s;">Showcase your creations and attract new customers</p>
+    </div>
+
+    <!-- Tabs -->
+    <div class="fu" style="display:flex;gap:8px;margin-bottom:24px;animation-delay:.1s;">
+      <button class="tab-pill act" id="tab-listing" onclick="switchTab('listing')">📋 My Listings</button>
+      <button class="tab-pill inact" id="tab-add"     onclick="switchTab('add')">➕ Add New Item</button>
+      <button class="tab-pill inact" id="tab-bulk"    onclick="switchTab('bulk')">📦 Bulk Upload</button>
+    </div>
+
+    <!-- ========== TAB: LISTINGS ========== -->
+    <div id="panel-listing">
+      <!-- Stats bar -->
+      <div class="glass fu rounded-2xl p-4 mb-6" style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;animation-delay:.15s;">
+        <div style="text-align:center;">
+          <p style="font-family:'DM Sans',sans-serif;color:#a1887f;font-size:11px;text-transform:uppercase;letter-spacing:.5px;margin:0 0 4px;font-weight:600;">Total Items</p>
+          <p id="stat-total" style="font-family:'Playfair Display',serif;color:#3e2723;font-size:22px;font-weight:700;margin:0;">0</p>
+        </div>
+        <div style="text-align:center;">
+          <p style="font-family:'DM Sans',sans-serif;color:#a1887f;font-size:11px;text-transform:uppercase;letter-spacing:.5px;margin:0 0 4px;font-weight:600;">Live</p>
+          <p id="stat-live" style="font-family:'Playfair Display',serif;color:#6b8f5e;font-size:22px;font-weight:700;margin:0;">0</p>
+        </div>
+        <div style="text-align:center;">
+          <p style="font-family:'DM Sans',sans-serif;color:#a1887f;font-size:11px;text-transform:uppercase;letter-spacing:.5px;margin:0 0 4px;font-weight:600;">Draft</p>
+          <p id="stat-draft" style="font-family:'Playfair Display',serif;color:#b47846;font-size:22px;font-weight:700;margin:0;">0</p>
+        </div>
+        <div style="text-align:center;">
+          <p style="font-family:'DM Sans',sans-serif;color:#a1887f;font-size:11px;text-transform:uppercase;letter-spacing:.5px;margin:0 0 4px;font-weight:600;">Avg. Price</p>
+          <p id="stat-avg" style="font-family:'Playfair Display',serif;color:#3e2723;font-size:22px;font-weight:700;margin:0;">—</p>
+        </div>
+      </div>
+
+      <!-- Filter -->
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap;">
+        <input class="inp" type="search" id="listing-search" placeholder="Search your items…" oninput="renderListings()" style="max-width:260px;">
+        <select class="inp select-inp" id="listing-filter" onchange="renderListings()" style="max-width:160px;">
+          <option value="">All status</option>
+          <option value="live">Live</option>
+          <option value="draft">Draft</option>
+        </select>
+        <button class="btn-outline" onclick="switchTab('add')" style="margin-left:auto;">+ Add Item</button>
+      </div>
+
+      <div id="listings-container" style="display:flex;flex-direction:column;gap:12px;"></div>
+      <div id="empty-state" style="display:none;text-align:center;padding:48px 0;">
+        <div style="font-size:56px;margin-bottom:12px;">🧁</div>
+        <p style="font-family:'Playfair Display',serif;color:rgba(255,250,245,.7);font-size:20px;font-weight:600;margin:0 0 8px;">No items yet</p>
+        <p style="font-family:'DM Sans',sans-serif;color:rgba(255,250,245,.45);font-size:14px;margin:0 0 20px;">Start building your menu to attract customers</p>
+        <button class="btn-primary" onclick="switchTab('add')">Add Your First Item</button>
+      </div>
+    </div>
+
+    <!-- ========== TAB: ADD ITEM ========== -->
+    <div id="panel-add" style="display:none;">
+      <div class="glass fu rounded-3xl shadow-xl" style="padding:32px 36px;max-width:700px;">
+        <h2 style="font-family:'Playfair Display',serif;color:#3e2723;font-size:26px;font-weight:700;margin:0 0 6px;" id="form-title">Add Menu Item</h2>
+        <p style="font-family:'DM Sans',sans-serif;color:#8d6e63;font-size:14px;margin:0 0 28px;" id="form-sub">Fill in the details for your new baked good</p>
+
+        <!-- Photo upload -->
+        <div style="margin-bottom:22px;">
+          <label class="lbl">Photos <span style="color:#a1887f;font-weight:400;">(up to 5)</span></label>
+          <img id="preview-img" alt="preview">
+          <div class="upload-zone" id="photo-drop" onclick="document.getElementById('photo-input').click()" ondragover="dragOver(event)" ondragleave="dragLeave(event)" ondrop="dropFile(event)">
+            <input type="file" id="photo-input" accept="image/*" multiple style="display:none" onchange="previewPhoto(this)">
+            <div style="font-size:36px;margin-bottom:8px;">📸</div>
+            <p style="font-family:'DM Sans',sans-serif;color:#8d6e63;font-size:14px;font-weight:600;margin:0 0 4px;">Drop photos here or click to upload</p>
+            <p style="font-family:'DM Sans',sans-serif;color:#a1887f;font-size:12px;margin:0;">JPG, PNG, WebP · Max 5 MB each</p>
+          </div>
+          <div id="photo-preview-strip" style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;"></div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:2fr 1fr;gap:16px;margin-bottom:16px;">
+          <div>
+            <label class="lbl">Item Name *</label>
+            <input class="inp" type="text" id="item-name" placeholder="e.g. Earl Grey Chiffon Cake">
+            <p id="item-name-err" style="color:#e53935;font-family:'DM Sans',sans-serif;font-size:12px;margin-top:4px;display:none;">Item name is required.</p>
+          </div>
+          <div>
+            <label class="lbl">Category *</label>
+            <select class="inp select-inp" id="item-cat">
+              <option value="">— Select —</option>
+              <option value="birthday-cake">🎂 Cake</option>
+              <option value="bread">🍞 Bread</option>
+              <option value="pastry">🥐 Pastry</option>
+              <option value="cupcakes">🧁 Cupcakes</option>
+              <option value="cookies">🍪 Cookies</option>
+              <option value="wedding-cake">💒 Wedding</option>
+              <option value="biscuit">🫓 Biscuit</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="margin-bottom:16px;">
+          <label class="lbl">Description</label>
+          <textarea class="inp" id="item-desc" rows="3" placeholder="Describe flavours, textures, what makes this special…" style="resize:none;line-height:1.5;"></textarea>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:16px;">
+          <div>
+            <label class="lbl">Base Price (SGD) *</label>
+            <input class="inp" type="number" id="item-price" placeholder="38" min="1">
+            <p id="item-price-err" style="color:#e53935;font-family:'DM Sans',sans-serif;font-size:12px;margin-top:4px;display:none;">Valid price required.</p>
+          </div>
+          <div>
+            <label class="lbl">Lead Time</label>
+            <select class="inp select-inp" id="item-lead">
+              <option value="">— —</option>
+              <option value="24h">24 hours</option>
+              <option value="48h">48 hours</option>
+              <option value="3d">3 days</option>
+              <option value="1w">1 week</option>
+              <option value="2w">2 weeks</option>
+            </select>
+          </div>
+          <div>
+            <label class="lbl">Serves</label>
+            <input class="inp" type="text" id="item-serves" placeholder="e.g. 8–10">
+          </div>
+        </div>
+
+        <!-- Dietary tags -->
+        <div style="margin-bottom:22px;">
+          <label class="lbl">Dietary options</label>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <button class="diet-chip" onclick="this.classList.toggle('on')">🌿 Vegan</button>
+            <button class="diet-chip" onclick="this.classList.toggle('on')">🥛 Dairy-free</button>
+            <button class="diet-chip" onclick="this.classList.toggle('on')">🌾 Gluten-free</button>
+            <button class="diet-chip" onclick="this.classList.toggle('on')">🥜 Nut-free</button>
+            <button class="diet-chip" onclick="this.classList.toggle('on')">🍬 Sugar-free</button>
+            <button class="diet-chip" onclick="this.classList.toggle('on')">🕌 Halal</button>
+          </div>
+        </div>
+
+        <!-- Customisable toggle -->
+        <div style="display:flex;align-items:center;justify-content:space-between;background:rgba(200,149,108,.06);border:1px solid rgba(200,149,108,.15);border-radius:14px;padding:14px 18px;margin-bottom:22px;">
+          <div>
+            <p style="font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;color:#3e2723;margin:0 0 2px;">Accept custom orders?</p>
+            <p style="font-family:'DM Sans',sans-serif;font-size:12px;color:#a1887f;margin:0;">Customers can request modifications or sizes</p>
+          </div>
+          <button id="custom-toggle" onclick="toggleCustom()" style="width:48px;height:26px;border-radius:999px;background:rgba(200,149,108,.25);border:none;cursor:pointer;position:relative;transition:background .3s;">
+            <div id="custom-thumb" style="width:20px;height:20px;border-radius:999px;background:#fff;position:absolute;top:3px;left:3px;transition:transform .3s;box-shadow:0 1px 4px rgba(0,0,0,.15);"></div>
+          </button>
+        </div>
+
+        <!-- Publish / draft -->
+        <div id="status-select" style="display:flex;gap:10px;margin-bottom:24px;">
+          <button class="tab-pill act" id="status-live" onclick="setStatus('live')" style="flex:1;text-align:center;">🟢 Publish Now</button>
+          <button class="tab-pill inact" id="status-draft" onclick="setStatus('draft')" style="flex:1;text-align:center;">📝 Save as Draft</button>
+        </div>
+
+        <div style="display:flex;gap:12px;">
+          <button class="btn-primary" id="save-item-btn" onclick="saveItem()" style="flex:1;">Save Item</button>
+          <button class="btn-outline" onclick="resetForm()">Clear</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========== TAB: BULK UPLOAD ========== -->
+    <div id="panel-bulk" style="display:none;">
+      <div class="glass fu rounded-3xl shadow-xl" style="padding:36px;max-width:660px;">
+        <h2 style="font-family:'Playfair Display',serif;color:#3e2723;font-size:26px;font-weight:700;margin:0 0 6px;">Bulk Upload via CSV</h2>
+        <p style="font-family:'DM Sans',sans-serif;color:#8d6e63;font-size:14px;margin:0 0 28px;line-height:1.6;">Upload multiple items at once. Download our template, fill it in, then re-upload.</p>
+
+        <!-- Template download -->
+        <div style="background:rgba(200,149,108,.06);border:1px solid rgba(200,149,108,.18);border-radius:16px;padding:18px 22px;margin-bottom:24px;display:flex;align-items:center;gap:16px;">
+          <div style="font-size:32px;">📄</div>
+          <div style="flex:1;">
+            <p style="font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;color:#3e2723;margin:0 0 2px;">Download CSV Template</p>
+            <p style="font-family:'DM Sans',sans-serif;font-size:12px;color:#a1887f;margin:0;">Includes all required columns with example rows</p>
+          </div>
+          <button class="btn-outline" onclick="downloadTemplate()" style="white-space:nowrap;">⬇ Download</button>
+        </div>
+
+        <!-- CSV drop zone -->
+        <label class="lbl">Upload your CSV</label>
+        <div class="upload-zone" id="csv-drop" onclick="document.getElementById('csv-input').click()" ondragover="dragOver(event)" ondragleave="dragLeave(event)" ondrop="dropCsv(event)" style="margin-bottom:16px;">
+          <input type="file" id="csv-input" accept=".csv" style="display:none" onchange="parseCsv(this)">
+          <div style="font-size:36px;margin-bottom:8px;">📊</div>
+          <p style="font-family:'DM Sans',sans-serif;color:#8d6e63;font-size:14px;font-weight:600;margin:0 0 4px;" id="csv-label">Drop your CSV here or click to upload</p>
+          <p style="font-family:'DM Sans',sans-serif;color:#a1887f;font-size:12px;margin:0;">CSV format · Max 200 rows</p>
+        </div>
+
+        <!-- Preview table -->
+        <div id="csv-preview" style="display:none;margin-bottom:20px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+            <p style="font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;color:#3e2723;margin:0;" id="csv-count-label">Previewing 0 items</p>
+            <button onclick="clearCsv()" style="background:none;border:none;color:#a1887f;font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif;">Clear</button>
+          </div>
+          <div style="overflow-x:auto;border:1px solid rgba(200,149,108,.18);border-radius:12px;max-height:240px;overflow-y:auto;">
+            <table id="csv-table" style="width:100%;border-collapse:collapse;font-family:'DM Sans',sans-serif;font-size:12px;"></table>
+          </div>
+        </div>
+
+        <button class="btn-primary" id="bulk-save-btn" onclick="bulkSave()" disabled style="width:100%;">Import Items</button>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+</div>
+
+<script>
+  // ---- State ----
+  let items = JSON.parse(localStorage.getItem('sb_baker_items') || '[]');
+  let editId = null;
+  let customOn = false;
+  let itemStatus = 'live';
+  let csvRows = [];
+
+  // ---- Tab switching ----
+  function switchTab(tab) {
+    ['listing','add','bulk'].forEach(t => {
+      document.getElementById('panel-' + t).style.display = t === tab ? 'block' : 'none';
+      const btn = document.getElementById('tab-' + t);
+      btn.className = 'tab-pill ' + (t === tab ? 'act' : 'inact');
+    });
+    if (tab === 'listing') renderListings();
+  }
+
+  // ---- Toggle helpers ----
+  function toggleCustom() {
+    customOn = !customOn;
+    document.getElementById('custom-toggle').style.background = customOn ? '#6b8f5e' : 'rgba(200,149,108,.25)';
+    document.getElementById('custom-thumb').style.transform = customOn ? 'translateX(22px)' : 'translateX(0)';
+  }
+
+  function setStatus(s) {
+    itemStatus = s;
+    document.getElementById('status-live').className  = 'tab-pill ' + (s === 'live'  ? 'act' : 'inact');
+    document.getElementById('status-draft').className = 'tab-pill ' + (s === 'draft' ? 'act' : 'inact');
+  }
+
+  // ---- Photo preview ----
+  function previewPhoto(input) {
+    const strip = document.getElementById('photo-preview-strip');
+    const files = Array.from(input.files).slice(0, 5);
+    strip.innerHTML = '';
+    files.forEach(file => {
+      const reader = new FileReader();
+      reader.onload = e => {
+        const img = document.createElement('img');
+        img.src = e.target.result;
+        img.style.cssText = 'width:72px;height:72px;border-radius:10px;object-fit:cover;border:1px solid rgba(200,149,108,.25);';
+        strip.appendChild(img);
+      };
+      reader.readAsDataURL(file);
+    });
+    document.getElementById('photo-drop').style.borderColor = files.length ? '#c8956c' : '';
+  }
+
+  function dragOver(e) { e.preventDefault(); e.currentTarget.classList.add('drag-over'); }
+  function dragLeave(e) { e.currentTarget.classList.remove('drag-over'); }
+  function dropFile(e) {
+    e.preventDefault(); e.currentTarget.classList.remove('drag-over');
+    const dt = e.dataTransfer;
+    if (dt.files.length) { const fi = document.getElementById('photo-input'); fi.files = dt.files; previewPhoto(fi); }
+  }
+  function dropCsv(e) {
+    e.preventDefault(); e.currentTarget.classList.remove('drag-over');
+    const file = e.dataTransfer.files[0];
+    if (file) parseCsvFile(file);
+  }
+
+  // ---- Save item ----
+  function saveItem() {
+    const name  = document.getElementById('item-name').value.trim();
+    const price = parseFloat(document.getElementById('item-price').value);
+    let ok = true;
+    if (!name)  { document.getElementById('item-name-err').style.display = 'block'; ok = false; }
+    else          document.getElementById('item-name-err').style.display = 'none';
+    if (!price || price <= 0) { document.getElementById('item-price-err').style.display = 'block'; ok = false; }
+    else                        document.getElementById('item-price-err').style.display = 'none';
+    if (!ok) return;
+
+    const dietary = Array.from(document.querySelectorAll('.diet-chip.on')).map(b => b.textContent.trim());
+    const item = {
+      id: editId || ('item_' + Date.now()),
+      name,
+      category: document.getElementById('item-cat').value || 'occasion-cake',
+      description: document.getElementById('item-desc').value.trim(),
+      price,
+      leadTime: document.getElementById('item-lead').value,
+      serves:   document.getElementById('item-serves').value.trim(),
+      dietary,
+      customOrders: customOn,
+      status: itemStatus,
+      createdAt: editId ? undefined : new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+
+    if (editId) {
+      const idx = items.findIndex(i => i.id === editId);
+      if (idx > -1) items[idx] = { ...items[idx], ...item };
+      editId = null;
+    } else {
+      items.unshift(item);
+    }
+    localStorage.setItem('sb_baker_items', JSON.stringify(items));
+
+    SmartBakers.ui.toast(itemStatus === 'live' ? '✅ Item published!' : '📝 Saved as draft', 'success');
+    resetForm();
+    switchTab('listing');
+  }
+
+  function resetForm() {
+    ['item-name','item-desc','item-serves','item-price'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('item-cat').value = '';
+    document.getElementById('item-lead').value = '';
+    document.querySelectorAll('.diet-chip.on').forEach(b => b.classList.remove('on'));
+    document.getElementById('photo-preview-strip').innerHTML = '';
+    document.getElementById('photo-input').value = '';
+    customOn = false;
+    toggleCustom(); toggleCustom(); // reset thumb
+    setStatus('live');
+    editId = null;
+    document.getElementById('form-title').textContent = 'Add Menu Item';
+    document.getElementById('form-sub').textContent   = 'Fill in the details for your new baked good';
+    document.getElementById('save-item-btn').textContent = 'Save Item';
+  }
+
+  // ---- Edit item ----
+  function editItem(id) {
+    const item = items.find(i => i.id === id);
+    if (!item) return;
+    editId = id;
+    switchTab('add');
+    document.getElementById('item-name').value  = item.name || '';
+    document.getElementById('item-cat').value   = item.category || '';
+    document.getElementById('item-desc').value  = item.description || '';
+    document.getElementById('item-price').value = item.price || '';
+    document.getElementById('item-lead').value  = item.leadTime || '';
+    document.getElementById('item-serves').value= item.serves || '';
+    setStatus(item.status || 'live');
+    if (item.customOrders !== customOn) toggleCustom();
+    document.getElementById('form-title').textContent = 'Edit Item';
+    document.getElementById('form-sub').textContent   = 'Update the details below';
+    document.getElementById('save-item-btn').textContent = 'Update Item';
+  }
+
+  function deleteItem(id) {
+    if (!confirm('Delete this item?')) return;
+    items = items.filter(i => i.id !== id);
+    localStorage.setItem('sb_baker_items', JSON.stringify(items));
+    renderListings();
+    SmartBakers.ui.toast('Item removed.', 'info');
+  }
+
+  function toggleStatus(id) {
+    const item = items.find(i => i.id === id);
+    if (!item) return;
+    item.status = item.status === 'live' ? 'draft' : 'live';
+    localStorage.setItem('sb_baker_items', JSON.stringify(items));
+    renderListings();
+    SmartBakers.ui.toast(item.status === 'live' ? '🟢 Item is now live' : '📝 Moved to draft', 'info');
+  }
+
+  // ---- Render listings ----
+  const emojiMap = SmartBakers.requests.emojiMap;
+
+  function renderListings() {
+    const q      = (document.getElementById('listing-search')?.value || '').toLowerCase();
+    const filter = document.getElementById('listing-filter')?.value || '';
+    let filtered = items.filter(item => {
+      const matchQ = !q || item.name.toLowerCase().includes(q);
+      const matchF = !filter || item.status === filter;
+      return matchQ && matchF;
+    });
+
+    const container = document.getElementById('listings-container');
+    const empty     = document.getElementById('empty-state');
+
+    // Stats
+    document.getElementById('stat-total').textContent = items.length;
+    document.getElementById('stat-live').textContent  = items.filter(i => i.status === 'live').length;
+    document.getElementById('stat-draft').textContent = items.filter(i => i.status === 'draft').length;
+    const prices = items.map(i => i.price).filter(Boolean);
+    document.getElementById('stat-avg').textContent = prices.length ? '$' + Math.round(prices.reduce((a,b) => a+b,0)/prices.length) : '—';
+
+    if (!filtered.length) {
+      container.innerHTML = '';
+      empty.style.display = 'block';
+      return;
+    }
+    empty.style.display = 'none';
+
+    container.innerHTML = filtered.map(item => {
+      const emoji = emojiMap[item.category] || '🍰';
+      const badgeCls = item.status === 'live' ? 'badge-open' : 'badge-draft';
+      const badgeTxt = item.status === 'live' ? '🟢 Live' : '📝 Draft';
+      const dietary  = (item.dietary || []).slice(0,3).map(d => `<span style="font-size:11px;padding:2px 7px;border-radius:6px;background:rgba(107,143,94,.08);color:#4a7c3f;border:1px solid rgba(107,143,94,.15);font-family:'DM Sans',sans-serif;">${SmartBakers.utils.escHtml(d)}</span>`).join('');
+      return `
+        <div class="item-card pop" style="animation-delay:0s;">
+          <div class="item-thumb">${emoji}</div>
+          <div style="flex:1;min-width:0;">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;flex-wrap:wrap;">
+              <p style="font-family:'Playfair Display',serif;color:#3e2723;font-size:16px;font-weight:700;margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${SmartBakers.utils.escHtml(item.name)}</p>
+              <span class="badge ${badgeCls}">${badgeTxt}</span>
+            </div>
+            <p style="font-family:'DM Sans',sans-serif;color:#8d6e63;font-size:12px;margin:0 0 6px;">${item.serves ? 'Serves ' + SmartBakers.utils.escHtml(item.serves) + ' · ' : ''}${item.leadTime ? SmartBakers.utils.escHtml(item.leadTime) + ' lead time' : ''}</p>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;">${dietary}</div>
+          </div>
+          <div style="text-align:right;flex-shrink:0;">
+            <p style="font-family:'Playfair Display',serif;color:#c8956c;font-size:20px;font-weight:700;margin:0 0 10px;">$${item.price}</p>
+            <div style="display:flex;gap:6px;justify-content:flex-end;">
+              <button onclick="toggleStatus('${item.id}')" style="padding:6px 10px;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:11px;font-weight:600;cursor:pointer;background:rgba(200,149,108,.1);color:#8d6e63;border:1px solid rgba(200,149,108,.2);">${item.status === 'live' ? 'Unpublish' : 'Publish'}</button>
+              <button onclick="editItem('${item.id}')" style="padding:6px 10px;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:11px;font-weight:600;cursor:pointer;background:rgba(200,149,108,.1);color:#8d6e63;border:1px solid rgba(200,149,108,.2);">Edit</button>
+              <button onclick="deleteItem('${item.id}')" style="padding:6px 10px;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:11px;font-weight:600;cursor:pointer;background:rgba(229,57,53,.06);color:#c62828;border:1px solid rgba(229,57,53,.15);">Delete</button>
+            </div>
+          </div>
+        </div>`;
+    }).join('');
+  }
+
+  // ---- CSV Bulk upload ----
+  function downloadTemplate() {
+    const header = 'name,category,description,price,lead_time,serves,dietary,custom_orders,status';
+    const example = '"Matcha Opera Cake","birthday-cake","Light matcha sponge with mascarpone",68,"48h","8-10","Vegan,Gluten-free",true,"live"';
+    const blob = new Blob([header + '\n' + example], { type: 'text/csv' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'smart_bakers_menu_template.csv';
+    a.click();
+    SmartBakers.ui.toast('Template downloaded!', 'success');
+  }
+
+  function parseCsv(input) {
+    if (!input.files.length) return;
+    parseCsvFile(input.files[0]);
+  }
+
+  function parseCsvFile(file) {
+    document.getElementById('csv-label').textContent = file.name;
+    const reader = new FileReader();
+    reader.onload = e => {
+      const lines = e.target.result.split('\n').map(l => l.trim()).filter(Boolean);
+      const headers = lines[0].split(',').map(h => h.replace(/"/g,'').trim());
+      csvRows = lines.slice(1).map(line => {
+        const vals = line.match(/(".*?"|[^,]+)/g) || [];
+        const obj = {};
+        headers.forEach((h, i) => { obj[h] = (vals[i] || '').replace(/"/g,'').trim(); });
+        return obj;
+      });
+      document.getElementById('csv-count-label').textContent = `Previewing ${csvRows.length} item${csvRows.length !== 1 ? 's' : ''}`;
+      renderCsvTable(headers, csvRows);
+      document.getElementById('csv-preview').style.display = 'block';
+      document.getElementById('bulk-save-btn').disabled = csvRows.length === 0;
+    };
+    reader.readAsText(file);
+  }
+
+  function renderCsvTable(headers, rows) {
+    const table = document.getElementById('csv-table');
+    const head = `<thead><tr>${headers.map(h => `<th style="padding:8px 12px;text-align:left;font-family:'DM Sans',sans-serif;font-size:11px;font-weight:600;color:#8d6e63;border-bottom:1px solid rgba(200,149,108,.18);white-space:nowrap;">${SmartBakers.utils.escHtml(h)}</th>`).join('')}</tr></thead>`;
+    const body = `<tbody>${rows.slice(0,10).map((row, ri) => `<tr style="background:${ri%2?'transparent':'rgba(200,149,108,.03)'};">${headers.map(h => `<td style="padding:7px 12px;font-family:'DM Sans',sans-serif;font-size:12px;color:#5c3d2e;white-space:nowrap;max-width:160px;overflow:hidden;text-overflow:ellipsis;">${SmartBakers.utils.escHtml(row[h] || '')}</td>`).join('')}</tr>`).join('')}</tbody>`;
+    table.innerHTML = head + body;
+  }
+
+  function clearCsv() {
+    csvRows = [];
+    document.getElementById('csv-preview').style.display = 'none';
+    document.getElementById('csv-input').value = '';
+    document.getElementById('csv-label').textContent = 'Drop your CSV here or click to upload';
+    document.getElementById('bulk-save-btn').disabled = true;
+  }
+
+  function bulkSave() {
+    if (!csvRows.length) return;
+    const newItems = csvRows.map(row => ({
+      id: 'item_' + Date.now() + '_' + Math.random().toString(36).slice(2,7),
+      name: row.name || 'Unnamed',
+      category: row.category || 'occasion-cake',
+      description: row.description || '',
+      price: parseFloat(row.price) || 0,
+      leadTime: row.lead_time || '',
+      serves: row.serves || '',
+      dietary: row.dietary ? row.dietary.split(',').map(d => d.trim()) : [],
+      customOrders: row.custom_orders === 'true',
+      status: row.status === 'draft' ? 'draft' : 'live',
+      createdAt: new Date().toISOString(),
+    }));
+    items = [...newItems, ...items];
+    localStorage.setItem('sb_baker_items', JSON.stringify(items));
+    SmartBakers.ui.toast(`✅ ${newItems.length} items imported!`, 'success');
+    clearCsv();
+    switchTab('listing');
+  }
+
+  // ---- Init ----
+  document.addEventListener('DOMContentLoaded', () => {
+    renderListings();
+  });
+</script>
+</body>
+</html>

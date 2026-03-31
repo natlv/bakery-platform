@@ -33,34 +33,26 @@
 <div class="flour-bg h-full w-full flex flex-col relative overflow-auto">
   <div class="flour-dust"></div>
 
-  <!-- Nav -->
   <nav data-sb-nav class="glass sticky top-0 z-20 shadow-sm" style="padding:16px 24px;display:flex;align-items:center;justify-content:space-between;position:relative;"></nav>
 
   <div class="flex-1 w-full max-w-6xl mx-auto px-6 py-8 relative z-10">
 
-    <!-- Breadcrumb -->
     <div style="margin-bottom:20px;display:flex;align-items:center;gap:8px;">
       <a href="bakery_marketplace_dashboard_search.html" style="font-family:'DM Sans',sans-serif;color:rgba(255,250,245,.5);font-size:13px;text-decoration:none;" onmouseover="this.style.color='rgba(255,250,245,.8)'" onmouseout="this.style.color='rgba(255,250,245,.5)'">← Marketplace</a>
       <span style="color:rgba(255,250,245,.3);">/</span>
       <span style="color:rgba(255,250,245,.7);font-family:'DM Sans',sans-serif;font-size:13px;">Place Bid</span>
     </div>
 
-    <!-- Split Layout -->
     <div class="split-wrap" style="display:flex;gap:28px;align-items:flex-start;">
 
-      <!-- LEFT: Request Details -->
       <div class="slide-l" style="flex:1;min-width:0;">
         <div class="panel">
           <div id="request-hero" style="height:200px;display:flex;align-items:center;justify-content:center;font-size:90px;background:linear-gradient(135deg,rgba(200,149,108,.08),rgba(210,180,140,.06));border-radius:16px;margin-bottom:20px;">🎂</div>
-
           <h1 id="request-title" style="font-family:'Playfair Display',serif;color:#3e2723;font-size:26px;font-weight:700;margin:0 0 12px;">Loading request...</h1>
-
           <div id="request-badges" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;">
             <span class="badge">Preparing...</span>
           </div>
-
-          <p id="request-description" style="font-family:'DM Sans',sans-serif;color:#8d6e63;font-size:14px;line-height:1.7;margin-bottom:20px;">Fetching the latest request details from the marketplace.</p>
-
+          <p id="request-description" style="font-family:'DM Sans',sans-serif;color:#8d6e63;font-size:14px;line-height:1.7;margin-bottom:20px;">Fetching the latest request details...</p>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;padding:16px;background:rgba(200,149,108,.04);border-radius:14px;border:1px solid rgba(200,149,108,.08);margin-bottom:16px;">
             <div>
               <p style="font-family:'DM Sans',sans-serif;color:#a1887f;font-size:10px;text-transform:uppercase;letter-spacing:.5px;margin:0 0 5px;font-weight:600;">Deadline</p>
@@ -79,7 +71,6 @@
               <p id="request-location" style="font-family:'DM Sans',sans-serif;color:#3e2723;font-size:15px;margin:0;font-weight:600;">Singapore</p>
             </div>
           </div>
-
           <div>
             <p style="font-family:'DM Sans',sans-serif;color:#a1887f;font-size:11px;text-transform:uppercase;letter-spacing:.5px;margin:0 0 8px;font-weight:600;">Dietary Requirements</p>
             <div id="request-dietary" style="display:flex;gap:6px;flex-wrap:wrap;">
@@ -89,82 +80,52 @@
         </div>
       </div>
 
-      <!-- RIGHT: Bid Form -->
       <div class="slide-r" style="flex:1;min-width:0;">
         <div class="panel" id="bid-form-panel">
           <h2 style="font-family:'Playfair Display',serif;color:#3e2723;font-size:24px;font-weight:700;margin:0 0 6px;">Your Proposal</h2>
           <p id="proposal-caption" style="font-family:'DM Sans',sans-serif;color:#a1887f;font-size:13px;margin:0 0 24px;">Loading live bid context...</p>
-
           <div style="display:flex;flex-direction:column;gap:18px;">
-
-            <!-- Price -->
             <div>
               <label style="font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;color:#3e2723;display:block;margin-bottom:6px;">Your Bid Price *</label>
               <div style="position:relative;">
                 <span style="position:absolute;left:14px;top:50%;transform:translateY(-50%);font-family:'DM Sans',sans-serif;color:#8d6e63;font-weight:600;">$</span>
                 <input class="inp" id="bid-price" type="number" min="0" step="1" placeholder="e.g. 400" style="padding-left:28px;" oninput="updateValueMsg()">
               </div>
-              <div class="price-suggest">
-                <button class="suggest-chip" onclick="setPrice(350)">$350 (-22%)</button>
-                <button class="suggest-chip" onclick="setPrice(400)">$400 (-11%)</button>
-                <button class="suggest-chip" onclick="setPrice(430)">$430 (-4%)</button>
-                <button class="suggest-chip" onclick="setPrice(450)">$450 (match)</button>
-              </div>
+              <div class="price-suggest" id="dynamic-price-chips">
+                </div>
               <p id="value-msg" style="font-family:'DM Sans',sans-serif;font-size:12px;color:#6b8f5e;margin-top:6px;display:none;"></p>
             </div>
-
-            <!-- Timeline -->
             <div>
               <label style="font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;color:#3e2723;display:block;margin-bottom:6px;">Estimated Timeline *</label>
               <input class="inp" id="bid-timeline" type="text" placeholder="e.g., 2 weeks, 10 days">
             </div>
-
-            <!-- Specialties -->
-            <div>
-              <label style="font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;color:#3e2723;display:block;margin-bottom:6px;">Your Relevant Experience</label>
-              <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;" id="specialty-chips">
-                <button class="suggest-chip" onclick="toggleSpecialty(this,'Floral cakes')">Floral cakes</button>
-                <button class="suggest-chip" onclick="toggleSpecialty(this,'Fondant')">Fondant</button>
-                <button class="suggest-chip" onclick="toggleSpecialty(this,'Vegan baking')">Vegan baking</button>
-                <button class="suggest-chip" onclick="toggleSpecialty(this,'Tiered cakes')">Tiered cakes</button>
-                <button class="suggest-chip" onclick="toggleSpecialty(this,'Wedding specialist')">Wedding specialist</button>
-              </div>
-            </div>
-
-            <!-- Notes -->
             <div>
               <label style="font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;color:#3e2723;display:block;margin-bottom:6px;">Message to Customer *</label>
-              <textarea class="inp" id="bid-notes" placeholder="Introduce yourself, explain your approach, and highlight why you're the perfect baker for this request…" style="min-height:120px;resize:vertical;font-family:'DM Sans',sans-serif;"></textarea>
+              <textarea class="inp" id="bid-notes" placeholder="Introduce yourself and explain your approach..." style="min-height:120px;resize:vertical;font-family:'DM Sans',sans-serif;"></textarea>
             </div>
-
             <div id="form-err" style="display:none;padding:12px;background:rgba(229,57,53,.08);border:1px solid rgba(229,57,53,.2);border-radius:10px;">
               <p style="font-family:'DM Sans',sans-serif;font-size:13px;color:#c62828;margin:0;" id="form-err-msg">Please fill in all required fields.</p>
             </div>
-
             <button class="submit-btn" onclick="handleSubmit()">Submit My Bid</button>
           </div>
         </div>
 
-        <!-- Success State -->
-        <div id="success-panel" style="display:none;" class="panel" style="text-align:center;">
+        <div id="success-panel" style="display:none;" class="panel">
           <div style="text-align:center;">
             <div style="font-size:56px;margin-bottom:16px;">🎉</div>
             <h2 style="font-family:'Playfair Display',serif;color:#3e2723;font-size:24px;font-weight:700;margin:0 0 8px;">Bid Submitted!</h2>
-            <p style="font-family:'DM Sans',sans-serif;color:#8d6e63;font-size:14px;line-height:1.6;margin:0 0 24px;">Your proposal has been sent to the customer. You'll be notified if they accept your bid!</p>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:16px;background:rgba(200,149,108,.04);border-radius:14px;border:1px solid rgba(200,149,108,.1);margin-bottom:24px;" id="summary-grid"></div>
+            <p style="font-family:'DM Sans',sans-serif;color:#8d6e63;font-size:14px;line-height:1.6;margin:0 0 24px;">Your proposal has been sent to the customer.</p>
             <a href="bakery_marketplace_dashboard_search.html">
               <button style="width:100%;padding:13px;background:linear-gradient(135deg,#c8956c,#a67c52);color:#fffaf5;border:none;border-radius:12px;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;cursor:pointer;">Browse More Requests →</button>
             </a>
           </div>
         </div>
       </div>
-
     </div>
   </div>
 </div>
 
 <script>
-  const selectedSpecialties = new Set();
   let requestData = null;
   let bids = [];
 
@@ -177,11 +138,9 @@
     const price = parseFloat(document.getElementById('bid-price').value);
     const msg = document.getElementById('value-msg');
     if (!price || !requestData) { msg.style.display='none'; return; }
-
     const budget = Number(requestData.budget || 0);
     const lowest = bids.length ? Math.min(...bids.map(bid => Number(bid.price || 0)).filter(Number.isFinite)) : null;
     let text = '';
-
     if (lowest !== null && price < lowest) {
       text = `Very competitive. You are ${SmartBakers.utils.formatCurrency(lowest - price)} under the lowest live bid.`;
       msg.style.color = '#6b8f5e';
@@ -189,33 +148,31 @@
       text = `Within budget and ready to compete.`;
       msg.style.color = '#b47846';
     } else if (budget) {
-      text = `${SmartBakers.utils.formatCurrency(price - budget)} above the customer's stated budget.`;
+      text = `${SmartBakers.utils.formatCurrency(price - budget)} above the customer's budget.`;
       msg.style.color = '#e53935';
-    } else {
-      text = 'Clear pricing helps customers compare bids quickly.';
-      msg.style.color = '#6b8f5e';
     }
-
     msg.textContent = text;
     msg.style.display = 'block';
   }
 
-  function toggleSpecialty(btn, label) {
-    if (selectedSpecialties.has(label)) {
-      selectedSpecialties.delete(label);
-      btn.style.background = 'transparent';
-      btn.style.color = '#8d6e63';
-      btn.style.borderColor = 'rgba(200,149,108,.3)';
-    } else {
-      selectedSpecialties.add(label);
-      btn.style.background = 'linear-gradient(135deg,#c8956c,#a67c52)';
-      btn.style.color = '#fffaf5';
-      btn.style.borderColor = 'transparent';
-    }
-  }
-
   function renderRequest() {
     if (!requestData) return;
+
+    // --- FIX: Dynamic Price Logic ---
+    const budget = Number(requestData.budget || 0);
+    const chipContainer = document.getElementById('dynamic-price-chips');
+    const suggestions = [
+      { label: 'Match', val: budget },
+      { label: '-10%', val: Math.round(budget * 0.9) },
+      { label: '-20%', val: Math.round(budget * 0.8) }
+    ];
+    if (chipContainer) {
+      chipContainer.innerHTML = suggestions.map(s => `
+        <button class="suggest-chip" onclick="setPrice(${s.val})">
+          $${s.val} (${s.label})
+        </button>
+      `).join('');
+    }
 
     document.getElementById('request-hero').innerHTML = requestData.image_url
       ? `<img src="${SmartBakers.utils.escHtml(requestData.image_url)}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:16px;">`
@@ -224,7 +181,6 @@
     document.getElementById('request-description').textContent = requestData.details;
     document.getElementById('request-deadline').textContent = SmartBakers.utils.formatDate(requestData.deadline);
     document.getElementById('request-owner').textContent = `Customer #${requestData.customer_id || '1'}`;
-    document.getElementById('request-location').textContent = 'Singapore';
 
     const lowestBid = bids.length
       ? SmartBakers.utils.formatCurrency(Math.min(...bids.map(bid => Number(bid.price || 0)).filter(Number.isFinite)))
@@ -235,52 +191,26 @@
 
     document.getElementById('request-badges').innerHTML = `
       <span class="badge">${SmartBakers.utils.escHtml(SmartBakers.utils.sentenceCase(requestData.variety))}</span>
-      <span style="background:linear-gradient(135deg,#c8956c,#a67c52);color:#fffaf5;padding:5px 12px;border-radius:9px;font-size:13px;font-weight:700;font-family:'DM Sans',sans-serif;">${SmartBakers.utils.formatCurrency(requestData.budget)} Budget</span>
-      ${requestData.servings ? `<span class="badge">${SmartBakers.utils.escHtml(`${requestData.servings} servings`)}</span>` : ''}
+      <span style="background:linear-gradient(135deg,#c8956c,#a67c52);color:#fffaf5;padding:5px 12px;border-radius:9px;font-size:13px;font-weight:700;">${SmartBakers.utils.formatCurrency(requestData.budget)} Budget</span>
     `;
 
     document.getElementById('request-dietary').innerHTML = requestData.dietary.length
       ? requestData.dietary.map(item => `<span class="diet-tag">${SmartBakers.utils.escHtml(item)}</span>`).join('')
       : '<span class="diet-tag">No dietary notes</span>';
-
-    document.getElementById('proposal-caption').textContent = bids.length
-      ? `You are bidding against ${bids.length} existing proposal${bids.length === 1 ? '' : 's'}.`
-      : 'You could be the first baker to respond to this request.';
-
-    if (requestData.status !== 'open') {
-      document.getElementById('proposal-caption').textContent = 'This request has already been accepted and is no longer open for new bids.';
-      const submitBtn = document.querySelector('#bid-form-panel .submit-btn');
-      submitBtn.disabled = true;
-      submitBtn.textContent = 'Request Closed';
-    }
   }
 
   async function loadRequestPage() {
     const requestId = SmartBakers.routing.currentRequestId();
-    if (!requestId) {
-      document.getElementById('request-title').textContent = 'Pick a request from the marketplace first';
-      document.getElementById('proposal-caption').textContent = 'Open this page from a marketplace card so we know which request you want to bid on.';
-      return;
-    }
-
+    if (!requestId) return;
     try {
       requestData = await SmartBakers.api.getRequest(requestId);
-    } catch (error) {
-      const fallback = await SmartBakers.api.getRequests({ status: 'open' }).catch(() => []);
-      requestData = fallback.find(item => Number(item.request_id) === Number(requestId)) || null;
-      if (!requestData) {
-        document.getElementById('request-title').textContent = 'Request not found';
-        document.getElementById('proposal-caption').textContent = error.message || 'We could not load that request.';
-        return;
-      }
-    }
-
-    bids = await SmartBakers.api.getBids(requestId).catch(() => []);
-    renderRequest();
+      bids = await SmartBakers.api.getBids(requestId).catch(() => []);
+      renderRequest();
+    } catch (e) { console.error(e); }
   }
 
   async function handleSubmit() {
-    const user = SmartBakers.session.get();
+    const user = SmartBakers.session.get(); //
     const price    = document.getElementById('bid-price').value;
     const timeline = document.getElementById('bid-timeline').value.trim();
     const notes    = document.getElementById('bid-notes').value.trim();
@@ -288,46 +218,31 @@
     const errMsg   = document.getElementById('form-err-msg');
     errEl.style.display = 'none';
 
-    if (!requestData) { errMsg.textContent = 'Please return to the marketplace and choose a request first.'; errEl.style.display='block'; return; }
-    if (!price || parseFloat(price) <= 0) { errMsg.textContent = 'Please enter a valid bid price.'; errEl.style.display='block'; return; }
-    if (!timeline) { errMsg.textContent = 'Please provide an estimated timeline.'; errEl.style.display='block'; return; }
-    if (!notes) { errMsg.textContent = 'Please write a message to the customer.'; errEl.style.display='block'; return; }
+    if (!price || !timeline || !notes) {
+      errMsg.textContent = 'Please fill in all required fields.';
+      errEl.style.display='block';
+      return;
+    }
 
-    const submitBtn = document.querySelector('#bid-form-panel .submit-btn');
+    const submitBtn = document.querySelector('.submit-btn');
     submitBtn.disabled = true;
     submitBtn.textContent = 'Submitting...';
 
+    // --- FIX: Form Data with numericId for SQL ---
     const formData = new FormData();
     formData.append('request_id', String(requestData.request_id));
-    formData.append('baker_id', String(user.numericId || 1));
+    formData.append('baker_id', String(user.numericId)); // Sends 1 instead of "user_123"
     formData.append('price', price);
     formData.append('timeline', timeline);
-    formData.append(
-      'notes',
-      [
-        selectedSpecialties.size ? `Relevant experience: ${Array.from(selectedSpecialties).join(', ')}` : '',
-        notes,
-      ].filter(Boolean).join('\n\n')
-    );
+    formData.append('notes', notes);
 
     try {
-      await SmartBakers.api.submitBid(formData);
+      await SmartBakers.api.submitBid(formData); //
       document.getElementById('bid-form-panel').style.display = 'none';
-      const summary = document.getElementById('summary-grid');
-      summary.innerHTML = `
-        <div style="text-align:center;">
-          <p style="font-family:'DM Sans',sans-serif;color:#a1887f;font-size:10px;text-transform:uppercase;letter-spacing:.5px;margin:0 0 4px;font-weight:600;">Your Bid</p>
-          <p style="font-family:'Playfair Display',serif;color:#3e2723;font-size:20px;font-weight:700;margin:0;">${SmartBakers.utils.formatCurrency(price)}</p>
-        </div>
-        <div style="text-align:center;">
-          <p style="font-family:'DM Sans',sans-serif;color:#a1887f;font-size:10px;text-transform:uppercase;letter-spacing:.5px;margin:0 0 4px;font-weight:600;">Timeline</p>
-          <p style="font-family:'Playfair Display',serif;color:#3e2723;font-size:20px;font-weight:700;margin:0;">${SmartBakers.utils.escHtml(timeline)}</p>
-        </div>
-      `;
       document.getElementById('success-panel').style.display = 'block';
-      SmartBakers.ui.toast('Bid submitted successfully.', 'success');
+      SmartBakers.ui.toast('Bid submitted successfully!', 'success');
     } catch (error) {
-      errMsg.textContent = error.message || 'Could not submit your bid.';
+      errMsg.textContent = error.message || 'Submission failed.';
       errEl.style.display='block';
       submitBtn.disabled = false;
       submitBtn.textContent = 'Submit My Bid';
