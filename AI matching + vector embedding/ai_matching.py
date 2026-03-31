@@ -6,15 +6,15 @@ from sentence_transformers import SentenceTransformer
 # Load model once when the file is imported
 embed_model = SentenceTransformer('all-MiniLM-L6-v2')
 
-SEALION_API_KEY = "sk-mSMHrYXZuVe4j25gORBs2Q"
+SEALION_API_KEY = "SEALION_API_KEY"
 SEALION_API_URL = "https://api.sea-lion.ai/v1/chat/completions"
 
 def get_db_connection():
     return pg8000.connect(
-        host="10.52.68.3",
-        database="bakery_db",
-        user="postgres",
-        password="CS5224Database!"
+        host="IP_ADDRESS",
+        database="DB_NAME",
+        user="DB_USER",
+        password="DB_PASSWORD"
     )
 
 def match_bakers(request_text: str, top_n: int = 5):
