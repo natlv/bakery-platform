@@ -8,7 +8,7 @@ import shutil
 import os
 import uuid
 from bucket_utils import Bucket
-from db import cursor, conn, reset_connection
+from db import get_db_cursor
 from pydantic import BaseModel
 import sys
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -117,18 +117,18 @@ async def create_request(
     if file:
         image_url = unique_image_upload(file)
 
-    cursor.execute(
-        """
-        INSERT INTO request
-        (customer_id, title, description, budget, deadline, image_url)
-        VALUES (%s, %s, %s, %s, %s, %s)
-        RETURNING request_id
-        """,
-        (customer_id, title, description, budget, deadline, image_url)
-    )
-    
-    request_id = cursor.fetchone()[0]
-    conn.commit()
+    with get_db_cursor(commit=True) as cursor:
+        cursor.execute(
+            """
+            INSERT INTO request
+            (customer_id, title, description, budget, deadline, image_url)
+            VALUES (%s, %s, %s, %s, %s, %s)
+            RETURNING request_id
+            """,
+            (customer_id, title, description, budget, deadline, image_url)
+        )
+        request_id = cursor.fetchone()[0]
+
     return {"request_id": request_id}
 
 @app.get("/requests")
@@ -153,8 +153,9 @@ def get_requests(
 
         where_sql = f"WHERE {' AND '.join(clauses)}" if clauses else ""
 
-        cursor.execute(
-            f"""
+        with get_db_cursor() as cursor:
+            cursor.execute(
+                f"""
             SELECT
                 r.request_id,
                 r.customer_id,
@@ -181,50 +182,50 @@ def get_requests(
             {where_sql}
             ORDER BY r.created_at DESC
             """,
-            params,
-        )
+                params,
+            )
 
-        rows = cursor.fetchall()
-        return [serialize_request_row(row) for row in rows]
+            rows = cursor.fetchall()
+            return [serialize_request_row(row) for row in rows]
 
     except Exception as e:
-            reset_connection()
-            raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/requests/{request_id}")
 def get_request(request_id: int):
     logger.info(f"Fetching request with ID: {request_id}")
-    cursor.execute(
-        """
-        SELECT
-            r.request_id,
-            r.customer_id,
-            r.title,
-            r.description,
-            r.budget,
-            r.deadline,
-            r.status,
-            r.image_url,
-            r.accepted_bid_id,
-            r.created_at,
-            COALESCE(b.bid_count, 0) AS bid_count,
-            b.lowest_bid
-        FROM request r
-        LEFT JOIN (
+    with get_db_cursor() as cursor:
+        cursor.execute(
+            """
             SELECT
-                request_id,
-                COUNT(*) AS bid_count,
-                MIN(price) AS lowest_bid
-            FROM bid
-            GROUP BY request_id
-        ) b
-            ON b.request_id = r.request_id
-        WHERE r.request_id = %s
-        """,
-        (request_id,),
-    )
+                r.request_id,
+                r.customer_id,
+                r.title,
+                r.description,
+                r.budget,
+                r.deadline,
+                r.status,
+                r.image_url,
+                r.accepted_bid_id,
+                r.created_at,
+                COALESCE(b.bid_count, 0) AS bid_count,
+                b.lowest_bid
+            FROM request r
+            LEFT JOIN (
+                SELECT
+                    request_id,
+                    COUNT(*) AS bid_count,
+                    MIN(price) AS lowest_bid
+                FROM bid
+                GROUP BY request_id
+            ) b
+                ON b.request_id = r.request_id
+            WHERE r.request_id = %s
+            """,
+            (request_id,),
+        )
 
-    row = cursor.fetchone()
+        row = cursor.fetchone()
     if not row:
         raise HTTPException(status_code=404, detail="Request not found")
 
@@ -238,76 +239,75 @@ def submit_bid(
     timeline: str = Form(...),
     notes: str = Form(None)
 ):
-    cursor.execute(
-        """
-        SELECT status
-        FROM request
-        WHERE request_id = %s
-        """,
-        (request_id,),
-    )
+    with get_db_cursor(commit=True) as cursor:
+        cursor.execute(
+            """
+            SELECT status
+            FROM request
+            WHERE request_id = %s
+            """,
+            (request_id,),
+        )
 
-    request_row = cursor.fetchone()
-    if not request_row:
-        raise HTTPException(status_code=404, detail="Request not found")
+        request_row = cursor.fetchone()
+        if not request_row:
+            raise HTTPException(status_code=404, detail="Request not found")
 
-    if request_row[0] != "open":
-        raise HTTPException(status_code=400, detail="This request is no longer open for bids")
+        if request_row[0] != "open":
+            raise HTTPException(status_code=400, detail="This request is no longer open for bids")
 
-    cursor.execute(
-        """
-        INSERT INTO bid
-        (request_id, baker_id, price, timeline, notes)
-        VALUES (%s, %s, %s, %s, %s)
-        """,
-        (request_id, baker_id, price, timeline, notes)
-    )
-
-    conn.commit()
+        cursor.execute(
+            """
+            INSERT INTO bid
+            (request_id, baker_id, price, timeline, notes)
+            VALUES (%s, %s, %s, %s, %s)
+            """,
+            (request_id, baker_id, price, timeline, notes)
+        )
     return {"message": "bid submitted"}
 
 @app.get("/bids/{request_id}")
 def get_bids(request_id: int):
-    cursor.execute(
-        """
-        SELECT bid_id, request_id, baker_id, price, timeline, notes, created_at
-        FROM bid
-        WHERE request_id = %s
-        ORDER BY created_at ASC
-        """,
-        (request_id,)
-    )
+    with get_db_cursor() as cursor:
+        cursor.execute(
+            """
+            SELECT bid_id, request_id, baker_id, price, timeline, notes, created_at
+            FROM bid
+            WHERE request_id = %s
+            ORDER BY created_at ASC
+            """,
+            (request_id,)
+        )
 
-    rows = cursor.fetchall()
-    return [serialize_bid_row(row) for row in rows]
+        rows = cursor.fetchall()
+        return [serialize_bid_row(row) for row in rows]
 
 @app.post("/accept-bid")
 def accept_bid(
     request_id: int = Form(...),
     bid_id: int = Form(...)
 ):
-    cursor.execute(
-        """
-        SELECT bid_id
-        FROM bid
-        WHERE bid_id = %s AND request_id = %s
-        """,
-        (bid_id, request_id),
-    )
+    with get_db_cursor(commit=True) as cursor:
+        cursor.execute(
+            """
+            SELECT bid_id
+            FROM bid
+            WHERE bid_id = %s AND request_id = %s
+            """,
+            (bid_id, request_id),
+        )
 
-    if not cursor.fetchone():
-        raise HTTPException(status_code=404, detail="Bid not found for this request")
+        if not cursor.fetchone():
+            raise HTTPException(status_code=404, detail="Bid not found for this request")
 
-    cursor.execute(
-        """
-        UPDATE request
-        SET status = 'accepted', accepted_bid_id = %s
-        WHERE request_id = %s
-        """,
-        (bid_id, request_id)
-    )
-
-    conn.commit()
+        cursor.execute(
+            """
+            UPDATE request
+            SET status = 'accepted', accepted_bid_id = %s
+            WHERE request_id = %s
+            """,
+            (bid_id, request_id)
+        )
     
     return {
         "message": "bid accepted",
