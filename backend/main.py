@@ -3,14 +3,15 @@ from typing import Optional
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse
-from fastapi.staticfiles import StaticFiles
 from dotenv import load_dotenv
 import shutil
 import os
-from urllib.parse import urlparse, unquote
 from bucket_utils import Bucket
-from db import cursor, conn
-from log_setup import backend_logger as logger
+from db import cursor, conn, reset_connection
+from pydantic import BaseModel
+import sys
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from matching import match_bakers
 
 load_dotenv()
 
