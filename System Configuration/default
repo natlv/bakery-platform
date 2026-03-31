@@ -25,7 +25,7 @@ server {
 
     server_name smart-bakers.com;
 
-    root /home/nathanlooenping/bakery-platform/frontend;
+    root /home/<username>;
     index index.html;
 
     location /requests {
