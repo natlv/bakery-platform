@@ -156,43 +156,43 @@ def get_requests(
 
         where_sql = f"WHERE {' AND '.join(clauses)}" if clauses else ""
 
-    cursor.execute(
-        f"""
-        SELECT
-            r.request_id,
-            r.customer_id,
-            r.title,
-            r.description,
-            r.budget,
-            r.deadline,
-            r.status,
-            r.image_url,
-            r.accepted_bid_id,
-            r.created_at,
-            COALESCE(b.bid_count, 0) AS bid_count,
-            b.lowest_bid
-        FROM request r
-        LEFT JOIN (
+        cursor.execute(
+            f"""
             SELECT
-                request_id,
-                COUNT(*) AS bid_count,
-                MIN(price) AS lowest_bid
-            FROM bid
-            GROUP BY request_id
-        ) b
-            ON b.request_id = r.request_id
-        {where_sql}
-        ORDER BY r.created_at DESC
-        """,
-        params,
-    )
+                r.request_id,
+                r.customer_id,
+                r.title,
+                r.description,
+                r.budget,
+                r.deadline,
+                r.status,
+                r.image_url,
+                r.accepted_bid_id,
+                r.created_at,
+                COALESCE(b.bid_count, 0) AS bid_count,
+                b.lowest_bid
+            FROM request r
+            LEFT JOIN (
+                SELECT
+                    request_id,
+                    COUNT(*) AS bid_count,
+                    MIN(price) AS lowest_bid
+                FROM bid
+                GROUP BY request_id
+            ) b
+                ON b.request_id = r.request_id
+            {where_sql}
+            ORDER BY r.created_at DESC
+            """,
+            params,
+        )
 
-    rows = cursor.fetchall()
-    return [serialize_request_row(row) for row in rows]
+        rows = cursor.fetchall()
+        return [serialize_request_row(row) for row in rows]
 
-except Exception as e:
-        reset_connection()
-        raise HTTPException(status_code=500, detail=str(e))
+    except Exception as e:
+            reset_connection()
+            raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/requests/{request_id}")
 def get_request(request_id: int):
