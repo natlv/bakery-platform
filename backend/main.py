@@ -6,12 +6,14 @@ from fastapi.responses import RedirectResponse
 from dotenv import load_dotenv
 import shutil
 import os
+import uuid
 from bucket_utils import Bucket
 from db import cursor, conn, reset_connection
 from pydantic import BaseModel
 import sys
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from matching import match_bakers
+from log_setup import logger
 
 load_dotenv()
 
@@ -62,15 +64,23 @@ def serialize_bid_row(row):
         "created_at": row[6].isoformat() if hasattr(row[6], "isoformat") else row[6],
     }
 
+def unique_image_upload(file: UploadFile):
+    unique_filename = f"{uuid.uuid4()}_{file.filename}"
+    local_path = os.path.join(UPLOAD_DIR, unique_filename)
+    try:
+        with open(local_path, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+        if bucket.upload_image(local_path):
+            return unique_filename
+    except Exception as e:
+        logger.error(f"Error uploading image: {e}")
+    finally:
+        if os.path.exists(local_path):
+            os.remove(local_path)
+
 @app.get("/")
 def root():
     return RedirectResponse(url="/login.html", status_code=307)
-
-
-@app.get("/api")
-def api_root():
-    return {"message": "Backend running"}
-
 
 @app.get("/health")
 def health():
@@ -80,20 +90,13 @@ def health():
 @app.post("/upload-image")
 async def upload_image(file: UploadFile = File(...)):
 
-    # save locally
-    local_path = os.path.join(UPLOAD_DIR, file.filename)
-    
-    with open(local_path, "wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
-
+    filename =unique_image_upload(file)
     # upload to bucket
-    success = bucket.upload_image(local_path)
-
-    if not success:
-        return {"error": "File already exists"}
+    if not filename:
+        return {"error": "Error uploading image"}
 
     # generate signed URL
-    signed_url = bucket.find_image(file.filename)
+    signed_url = bucket.find_image(filename)
     
     return {
         "message": "uploaded",
@@ -112,13 +115,7 @@ async def create_request(
     image_url = None
 
     if file:
-        local_path = f"{UPLOAD_DIR}/{file.filename}"
-
-        with open(local_path, "wb") as buffer:
-            shutil.copyfileobj(file.file, buffer)
-
-        bucket.upload_image(local_path)
-        image_url = file.filename
+        image_url = unique_image_upload(file)
 
     cursor.execute(
         """
