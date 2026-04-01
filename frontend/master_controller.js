@@ -5,7 +5,7 @@
 
 const SmartBakers = {
   config: {
-    defaultApiBase: "https://smart-bakers.com",
+    defaultApiBase: "",
     storage: {
       apiBase: "sb_api_base",
       userId: "sb_user_id",
@@ -344,8 +344,7 @@ const SmartBakers = {
   api: {
     base() {
       const fromWindow = window.SMART_BAKERS_API_BASE;
-      const fromStorage = SmartBakers.storage.get(SmartBakers.config.storage.apiBase, "");
-      return (fromWindow || fromStorage || SmartBakers.config.defaultApiBase).replace(/\/+$/, "");
+      return (fromWindow || SmartBakers.config.defaultApiBase).replace(/\/+$/, "");
     },
 
     endpoint(path) {

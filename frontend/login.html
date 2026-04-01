@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Smart Bakers — Sign In</title>
-  <script src="master_controller.js"></script>
+  <script>document.write('<scr'+'ipt src="master_controller.js?v=' + Date.now() + '"></'+'script>');</script>
   <script src="https://cdn.tailwindcss.com/3.4.17"></script>
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
   <style>
@@ -162,13 +162,14 @@
       });
         
       const userId = result.user_id;
-      const name = result.name
+      const name = result.name;
       const capitalName = name.charAt(0).toUpperCase();
+      const confirmedRole = result.role;
 
-      SmartBakers.session.save(userId, role, capitalName, email);
+      SmartBakers.session.save(userId, confirmedRole, capitalName, email);
 
       // Route by role
-      window.location.href = currentRole === 'Baker'
+      window.location.href = confirmedRole === 'Baker'
         ? 'bakery_marketplace_dashboard_search.html'
         : 'customer_home.html';
     } catch (err) {
