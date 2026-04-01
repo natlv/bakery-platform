@@ -14,3 +14,5 @@ backend/bucket_key.json
 backend/bucket-key.json
 bucket_key.json
 bucket-key.json
+CLAUDE.md
+.claude/settings.local.json
