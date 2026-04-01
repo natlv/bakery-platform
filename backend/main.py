@@ -352,25 +352,26 @@ class UserForgotPassword(BaseModel):
 async def signup(user: UserSignup):
     hashed_pw = generate_password_hash(user.password)
     try:
-        cursor.execute(
-            "INSERT INTO users (email, password_hash, role, first_name, last_name) VALUES (%s, %s, %s, %s, $s) RETURNING id",
-            (user.email, hashed_pw, user.role, user.first_name, user.last_name)
-        )
-        conn.commit()
+        with get_db_cursor(commit=True) as cursor:
+            cursor.execute(
+                "INSERT INTO users (email, password_hash, role, first_name, last_name) VALUES (%s, %s, %s, %s, %s) RETURNING id",
+                (user.email, hashed_pw, user.role, user.first_name, user.last_name)
+            )
         return {"message": "User created successfully"}
-    except Exception:
-        conn.rollback()
+    except Exception as e:
         logger.error(f"Signup error: {e}")
         raise HTTPException(status_code=400, detail="Email already registered")
 
 @app.post("/login")
 async def login(user: UserLogin):
-    cursor.execute("SELECT id, password_hash, role, first_name FROM users WHERE email = %s", (user.email,))
-    row = cursor.fetchone()
-    
+    with get_db_cursor() as cursor:
+        cursor.execute("SELECT id, password_hash, role, first_name FROM users WHERE email = %s", (user.email,))
+        row = cursor.fetchone()
+
     if row and check_password_hash(row[1], user.password):
         return {
             "message": "Login successful",
+            "user_id": row[0],
             "role" : row[2],
             "name" : row[3]
         }
@@ -378,29 +379,27 @@ async def login(user: UserLogin):
     raise HTTPException(status_code=401, detail="Invalid email or password")
 
 @app.post("/forgot-password")
-async def forgot_password(user: UserForgotPassword)
-    cursor.execute("SELECT id FROM users WHERE email = %s", (user.email,))
-    user = cursor.fetchone()
+async def forgot_password(user: UserForgotPassword):
+    with get_db_cursor() as cursor:
+        cursor.execute("SELECT id FROM users WHERE email = %s", (user.email,))
+        row = cursor.fetchone()
 
-    if not user:
+    if not row:
         raise HTTPException(status_code=404, detail="No account found with this email.")
 
-    return {"message": "User verified", "user_id": user[0]}
+    return {"message": "User verified", "user_id": row[0]}
 
 @app.post("/reset_password")
 async def reset_password(user: UserResetPassword):
     hashed_new_pw = generate_password_hash(user.password)
-    
     try:
-      cursor.execute(
-          "UPDATE users SET password_hash = %s WHERE id = %s",
-          (hashed_new_pw, user.user_id)
-      )
-      conn.commit()
-      return {"message": "Password updated successfully"}
-    
+        with get_db_cursor(commit=True) as cursor:
+            cursor.execute(
+                "UPDATE users SET password_hash = %s WHERE id = %s",
+                (hashed_new_pw, user.user_id)
+            )
+        return {"message": "Password updated successfully"}
     except Exception as e:
-      conn.rollback()
-      logger.error(f"Reset error: {e}")
-      raise HTTPException(status_code=500, detail="Failed to update password.")
+        logger.error(f"Reset error: {e}")
+        raise HTTPException(status_code=500, detail="Failed to update password.")
 app.mount("/", StaticFiles(directory=FRONTEND_DIR, html=True), name="frontend")

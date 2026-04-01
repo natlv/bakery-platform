@@ -155,7 +155,11 @@
     btn.disabled = true;
 
     try {
-      const result = await SmartBakers.api.login(email, pwd, currentRole);
+      const result = await SmartBakers.api.request('/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password: pwd, role: currentRole }),
+      });
         
       const userId = result.user_id;
       const name = result.name
