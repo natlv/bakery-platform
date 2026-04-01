@@ -168,12 +168,12 @@
         ? 'bakery_marketplace_dashboard_search.html'
         : 'customer_home.html';
     } catch (err) {
-        document.getElementById('login-err').textContent = err.message;
+        document.getElementById('login-err-msg').textContent = err.message;
         document.getElementById('login-err').style.display = 'block';
-        
-        btn.textContent = 'Sign In';
+
+        btn.textContent = `Sign In as ${role}`;
         btn.disabled = false;
-    }, 900);
+    }
   }
 
   // Allow Enter key
