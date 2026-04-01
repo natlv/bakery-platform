@@ -476,13 +476,35 @@ const SmartBakers = {
       });
     },
 
-        async matchBakers(query) {
+    async matchBakers(query) {
       return SmartBakers.api.request("baker-match", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ query }),
       });
     },
+      
+    async forgotPassword(email) {
+        return await SmartBakers.api.request("/forgot-password", {
+            method: 'POST',
+            body: JSON.stringify({ email })
+        });
+    },
+    async resetPassword(userId, newPassword) {
+        return await SmartBakers.api.request('/reset-password', {
+            method: 'POST',
+            body: JSON.stringify({ 
+                user_id: userId, 
+                new_password: newPassword 
+            })
+        });
+    },
+    async login(email, password, role) {
+        return await SmartBakers.api.request('/login', {
+            method: 'POST',
+            body: JSON.stringify({ email, password, role })
+        });
+    }
   },
 
   notifications: {
