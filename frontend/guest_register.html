@@ -422,17 +422,17 @@
         body: JSON.stringify({ email, password: pwd, role, first_name: first, last_name: last }),
       });
 
-      const userId = result.user_id || 'user_' + Date.now();
-      SmartBakers.session.save(userId, role, fullName, email);
+      sessionStorage.setItem('sb_signup_role', role);
       [1,2,3].forEach(i => document.getElementById('step' + i).style.display = 'none');
       document.getElementById('step-success').style.display = 'block';
       document.getElementById('prog-bar').style.width = '100%';
 
-      const destPage = selectedRole === 'Baker' ? 'bakery_marketplace_dashboard_search.html' : 'main_page_portfolio.html';
+      const loginUrl = `login.html?role=${encodeURIComponent(role)}`;
       document.getElementById('success-msg').textContent =
-        `Welcome to Smart Bakers, ${first}! Your ${selectedRole.toLowerCase()} account is ready. Redirecting you now…`;
-      document.getElementById('go-home-btn').onclick = () => window.location.href = destPage;
-      setTimeout(() => { window.location.href = destPage; }, 2800);
+        `Welcome to Smart Bakers, ${first}! Your ${selectedRole.toLowerCase()} account is ready. Please sign in to continue.`;
+      document.getElementById('go-home-btn').textContent = 'Go to Sign In →';
+      document.getElementById('go-home-btn').onclick = () => window.location.href = loginUrl;
+      setTimeout(() => { window.location.href = loginUrl; }, 2800);
     } catch (err) {
       alert(err.message || 'Signup failed');
       btn.disabled = false;

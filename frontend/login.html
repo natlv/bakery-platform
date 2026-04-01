@@ -114,6 +114,17 @@
 <script>
   let currentRole = 'Baker';
 
+  function hydrateSignupState() {
+    const params = new URLSearchParams(window.location.search);
+    const roleFromUrl = params.get('role') || sessionStorage.getItem('sb_signup_role');
+
+    if (roleFromUrl === 'Baker' || roleFromUrl === 'Customer') {
+      switchRole(roleFromUrl);
+    }
+
+    sessionStorage.removeItem('sb_signup_role');
+  }
+
   function switchRole(role) {
     currentRole = role;
     const baker = role === 'Baker';
@@ -185,6 +196,8 @@
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') handleLogin();
   });
+
+  document.addEventListener('DOMContentLoaded', hydrateSignupState);
 </script>
 </body>
 </html>
