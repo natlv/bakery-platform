@@ -1,11 +1,14 @@
 from typing import Optional
+from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Body
 from fastapi.staticfiles import StaticFiles
-from fastapi import FastAPI, UploadFile, File, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse
 from dotenv import load_dotenv
 import shutil
 import os
+from pydantic import BaseModel
+from werkzeug.security import generate_password_hash, check_password_hash
+from urllib.parse import urlparse, unquote
 import uuid
 from bucket_utils import Bucket
 from db import get_db_cursor
@@ -326,4 +329,78 @@ async def match_bakers_endpoint(request: MatchRequest):
     results = match_bakers(request.query)
     return results
 
+class UserSignup(BaseModel):
+    email: str
+    password: str
+    role: str
+    first_name: str
+    last_name: str
+
+class UserLogin(BaseModel):
+    email: str
+    password: str
+    role: str
+
+class UserResetPassword(BaseModel):
+    user_id: int
+    password: str
+
+class UserForgotPassword(BaseModel):
+    email: str
+
+@app.post("/signup")
+async def signup(user: UserSignup):
+    hashed_pw = generate_password_hash(user.password)
+    try:
+        cursor.execute(
+            "INSERT INTO users (email, password_hash, role, first_name, last_name) VALUES (%s, %s, %s, %s, $s) RETURNING id",
+            (user.email, hashed_pw, user.role, user.first_name, user.last_name)
+        )
+        conn.commit()
+        return {"message": "User created successfully"}
+    except Exception:
+        conn.rollback()
+        logger.error(f"Signup error: {e}")
+        raise HTTPException(status_code=400, detail="Email already registered")
+
+@app.post("/login")
+async def login(user: UserLogin):
+    cursor.execute("SELECT id, password_hash, role, first_name FROM users WHERE email = %s", (user.email,))
+    row = cursor.fetchone()
+    
+    if row and check_password_hash(row[1], user.password):
+        return {
+            "message": "Login successful",
+            "role" : row[2],
+            "name" : row[3]
+        }
+
+    raise HTTPException(status_code=401, detail="Invalid email or password")
+
+@app.post("/forgot-password")
+async def forgot_password(user: UserForgotPassword)
+    cursor.execute("SELECT id FROM users WHERE email = %s", (user.email,))
+    user = cursor.fetchone()
+
+    if not user:
+        raise HTTPException(status_code=404, detail="No account found with this email.")
+
+    return {"message": "User verified", "user_id": user[0]}
+
+@app.post("/reset_password")
+async def reset_password(user: UserResetPassword):
+    hashed_new_pw = generate_password_hash(user.password)
+    
+    try:
+      cursor.execute(
+          "UPDATE users SET password_hash = %s WHERE id = %s",
+          (hashed_new_pw, user.user_id)
+      )
+      conn.commit()
+      return {"message": "Password updated successfully"}
+    
+    except Exception as e:
+      conn.rollback()
+      logger.error(f"Reset error: {e}")
+      raise HTTPException(status_code=500, detail="Failed to update password.")
 app.mount("/", StaticFiles(directory=FRONTEND_DIR, html=True), name="frontend")
