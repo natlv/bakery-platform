@@ -179,33 +179,37 @@ const SmartBakers = {
 
       if (user.role === "Baker" && page === "posting_baking_request.html") {
         SmartBakers.ui.toast("Only customers can post new requests.", "warning");
-        setTimeout(() => {
-          window.location.href = "bakery_marketplace_dashboard_search.html";
-        }, 1200);
+        setTimeout(() => { window.location.href = "bakery_marketplace_dashboard_search.html"; }, 1200);
         return false;
       }
 
-      if (user.role === "Customer" && page === "baker_upload_items.html") {
-        SmartBakers.ui.toast("Only bakers can manage menu items.", "warning");
-        setTimeout(() => {
-          window.location.href = "main_page_portfolio.html";
-        }, 1200);
+      if (user.role === "Baker" && page === "customer_home.html") {
+        SmartBakers.ui.toast("This page is for customers only.", "warning");
+        setTimeout(() => { window.location.href = "bakery_marketplace_dashboard_search.html"; }, 1200);
         return false;
       }
 
       if (user.role === "Baker" && page === "ai_match_suggestions.html") {
         SmartBakers.ui.toast("AI suggestions are for customers only.", "warning");
-        setTimeout(() => {
-          window.location.href = "bakery_marketplace_dashboard_search.html";
-        }, 1200);
+        setTimeout(() => { window.location.href = "bakery_marketplace_dashboard_search.html"; }, 1200);
+        return false;
+      }
+
+      if (user.role === "Baker" && page === "customer_bid_accept.html") {
+        SmartBakers.ui.toast("This page is for customers only.", "warning");
+        setTimeout(() => { window.location.href = "bakery_marketplace_dashboard_search.html"; }, 1200);
+        return false;
+      }
+
+      if (user.role === "Customer" && page === "baker_upload_items.html") {
+        SmartBakers.ui.toast("Only bakers can manage menu items.", "warning");
+        setTimeout(() => { window.location.href = "customer_home.html"; }, 1200);
         return false;
       }
 
       if (user.role === "Customer" && page === "bakers_splitscreen_bidpage.html") {
         SmartBakers.ui.toast("Only bakers can place bids.", "warning");
-        setTimeout(() => {
-          window.location.href = "main_page_portfolio.html";
-        }, 1200);
+        setTimeout(() => { window.location.href = "customer_home.html"; }, 1200);
         return false;
       }
 
@@ -217,7 +221,7 @@ const SmartBakers = {
       window.location.href =
         user.role === "Baker"
           ? "bakery_marketplace_dashboard_search.html"
-          : "main_page_portfolio.html";
+          : "customer_home.html";
     },
   },
 
@@ -476,39 +480,17 @@ const SmartBakers = {
       });
     },
 
-    async matchBakers(query) {
+        async matchBakers(query) {
       return SmartBakers.api.request("baker-match", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ query }),
       });
     },
-      
-    async forgotPassword(email) {
-        return await SmartBakers.api.request("/forgot-password", {
-            method: 'POST',
-            body: JSON.stringify({ email })
-        });
-    },
-    async resetPassword(userId, newPassword) {
-        return await SmartBakers.api.request('/reset-password', {
-            method: 'POST',
-            body: JSON.stringify({ 
-                user_id: userId, 
-                new_password: newPassword 
-            })
-        });
-    },
-    async login(email, password, role) {
-        return await SmartBakers.api.request('/login', {
-            method: 'POST',
-            body: JSON.stringify({ email, password, role })
-        });
-    }
   },
 
   notifications: {
-    // Storage key scoped per user so baker and customer never share notifications
+    // Storage key scoped per user — baker and customer never share notifications
     _storageKey() {
       const userId = SmartBakers.storage.get(SmartBakers.config.storage.userId, "guest");
       return `sb_notifs_${userId}`;
@@ -518,42 +500,16 @@ const SmartBakers = {
     _seedForRole(role) {
       if (role === "Baker") {
         return [
-          {
-            id: 1,
-            type: "market",
-            text: "New baking requests are waiting — browse the marketplace and place your best bid.",
-            time: "Now",
-            read: false,
-          },
-          {
-            id: 2,
-            type: "tip",
-            text: "Tip: bids that include a clear timeline and a personal note win more often.",
-            time: "Today",
-            read: false,
-          },
+          { id: 1, type: "market", text: "New baking requests are waiting — browse the marketplace and place your best bid.", time: "Now", read: false },
+          { id: 2, type: "tip",    text: "Tip: bids that include a clear timeline and a personal note win more often.", time: "Today", read: false },
         ];
       }
-      // Customer seeds
       return [
-        {
-          id: 1,
-          type: "tip",
-          text: "Tip: adding a clear deadline and dietary notes helps bakers quote faster.",
-          time: "Now",
-          read: false,
-        },
-        {
-          id: 2,
-          type: "tip",
-          text: "Your request is live! Sit tight — bakers will start placing bids shortly.",
-          time: "Today",
-          read: false,
-        },
+        { id: 1, type: "tip", text: "Tip: adding a clear deadline and dietary notes helps bakers quote faster.", time: "Now", read: false },
+        { id: 2, type: "tip", text: "Your request is live! Sit tight — bakers will start placing bids shortly.", time: "Today", read: false },
       ];
     },
 
-    // Lazily load from localStorage, seeding if empty
     _load() {
       const key = SmartBakers.notifications._storageKey();
       const saved = SmartBakers.storage.getJson(key, null);
@@ -570,70 +526,29 @@ const SmartBakers = {
 
     /**
      * Push a new notification at runtime.
-     *
-     * @param {object} notif
-     * @param {string} notif.type  - "bid" | "accept" | "reject" | "market" | "tip"
-     * @param {string} notif.text  - Human-readable message
-     * @param {string} [notif.time] - Display time label (defaults to "Just now")
+     * type: "bid" | "accept" | "reject" | "market" | "tip"
      */
     push(notif) {
       const data = SmartBakers.notifications._load();
-      const newItem = {
-        id: Date.now(),
-        type: notif.type || "tip",
-        text: notif.text,
-        time: notif.time || "Just now",
-        read: false,
-      };
-      data.unshift(newItem); // newest first
+      data.unshift({ id: Date.now(), type: notif.type || "tip", text: notif.text, time: notif.time || "Just now", read: false });
       SmartBakers.notifications._save(data);
       SmartBakers.notifications._updateBadge();
       SmartBakers.notifications._renderPanel();
     },
 
-    /**
-     * Called by the bid-submission page after a baker places a bid.
-     * Adds a customer-facing notification: "Sarah B. placed a bid on your Wedding Cake."
-     *
-     * @param {string} bakerName   - Display name of the baker
-     * @param {string} requestTitle - Title of the customer's request
-     * @param {number} price        - Bid amount
-     */
+    /** Call after a baker submits a bid — adds notification to the customer's feed. */
     onBidPlaced(bakerName, requestTitle, price) {
-      SmartBakers.notifications.push({
-        type: "bid",
-        text: `🍰 ${bakerName} placed a bid of ${SmartBakers.utils.formatCurrency(price)} on your "${requestTitle}" request.`,
-        time: "Just now",
-      });
+      SmartBakers.notifications.push({ type: "bid", text: `🍰 ${bakerName} placed a bid of ${SmartBakers.utils.formatCurrency(price)} on your "${requestTitle}" request.` });
     },
 
-    /**
-     * Called by the accept-bid page after a customer accepts a bid.
-     * Adds a baker-facing notification: "Congratulations! Your bid was accepted."
-     *
-     * @param {string} customerName  - Display name of the customer
-     * @param {string} requestTitle  - Title of the request
-     * @param {number} price         - The accepted bid price
-     */
+    /** Call after a customer accepts a bid — adds notification to the baker's feed. */
     onBidAccepted(customerName, requestTitle, price) {
-      SmartBakers.notifications.push({
-        type: "accept",
-        text: `🎉 Congratulations! ${customerName} accepted your bid of ${SmartBakers.utils.formatCurrency(price)} for "${requestTitle}". Time to bake!`,
-        time: "Just now",
-      });
+      SmartBakers.notifications.push({ type: "accept", text: `🎉 Congratulations! ${customerName} accepted your bid of ${SmartBakers.utils.formatCurrency(price)} for "${requestTitle}". Time to bake!` });
     },
 
-    /**
-     * Called by the accept-bid page after a customer rejects / passes on a bid.
-     *
-     * @param {string} requestTitle - Title of the request
-     */
+    /** Call after a customer rejects a bid — adds notification to the baker's feed. */
     onBidRejected(requestTitle) {
-      SmartBakers.notifications.push({
-        type: "reject",
-        text: `Your bid on "${requestTitle}" was not selected this time. Keep bidding — the right customer is out there!`,
-        time: "Just now",
-      });
+      SmartBakers.notifications.push({ type: "reject", text: `Your bid on "${requestTitle}" was not selected this time. Keep bidding — the right customer is out there!` });
     },
 
     unreadCount() {
@@ -660,14 +575,7 @@ const SmartBakers = {
       const list = document.getElementById("notif-list");
       if (!list) return;
 
-      const icons = {
-        market: "🥖",
-        tip:    "💡",
-        accept: "🎉",
-        reject: "😔",
-        bid:    "💰",
-      };
-
+      const icons = { market: "🥖", tip: "💡", accept: "🎉", reject: "😔", bid: "💰" };
       const data = SmartBakers.notifications._load();
 
       if (!data.length) {
@@ -675,26 +583,15 @@ const SmartBakers = {
         return;
       }
 
-      list.innerHTML = data
-        .map(
-          (item) => `
-            <div style="padding:14px 18px;border-bottom:1px solid rgba(200,149,108,0.08);display:flex;gap:12px;background:${
-              item.read ? "transparent" : "rgba(200,149,108,0.05)"
-            };">
-              <span style="font-size:18px;flex-shrink:0;">${icons[item.type] || "🔔"}</span>
-              <div style="flex:1;">
-                <p style="margin:0 0 4px;font-family:'DM Sans',sans-serif;color:#3e2723;font-size:13px;line-height:1.4;">${SmartBakers.utils.escHtml(
-                  item.text
-                )}</p>
-                <p style="margin:0;font-family:'DM Sans',sans-serif;color:#a1887f;font-size:11px;">${SmartBakers.utils.escHtml(
-                  item.time
-                )}</p>
-              </div>
-              ${!item.read ? `<span style="width:7px;height:7px;border-radius:999px;background:#c8956c;flex-shrink:0;margin-top:4px;"></span>` : ""}
-            </div>
-          `
-        )
-        .join("");
+      list.innerHTML = data.map((item) => `
+        <div style="padding:14px 18px;border-bottom:1px solid rgba(200,149,108,0.08);display:flex;gap:12px;align-items:flex-start;background:${item.read ? "transparent" : "rgba(200,149,108,0.05)"};">
+          <span style="font-size:18px;flex-shrink:0;">${icons[item.type] || "🔔"}</span>
+          <div style="flex:1;">
+            <p style="margin:0 0 4px;font-family:'DM Sans',sans-serif;color:#3e2723;font-size:13px;line-height:1.4;">${SmartBakers.utils.escHtml(item.text)}</p>
+            <p style="margin:0;font-family:'DM Sans',sans-serif;color:#a1887f;font-size:11px;">${SmartBakers.utils.escHtml(item.time)}</p>
+          </div>
+          ${!item.read ? `<span style="width:7px;height:7px;border-radius:999px;background:#c8956c;flex-shrink:0;margin-top:4px;"></span>` : ""}
+        </div>`).join("");
     },
 
     togglePanel() {
@@ -707,6 +604,8 @@ const SmartBakers = {
 
     inject() {
       const nav = document.querySelector("[data-sb-nav]");
+      // New pages (customer_home, bakery_marketplace_dashboard_search) build
+      // their own nav inline and call _updateBadge() directly — skip injection.
       if (!nav) return;
 
       const user = SmartBakers.session.get();
@@ -726,6 +625,11 @@ const SmartBakers = {
               },
             ]
           : [
+              {
+                href: "customer_home.html",
+                label: "Discover",
+                active: page === "customer_home.html",
+              },
               {
                 href: "main_page_portfolio.html",
                 label: "My Requests",
@@ -760,11 +664,18 @@ const SmartBakers = {
               .join("")}
           </div>
         </div>
-        <div style="display:flex;align-items:center;gap:12px;">
+        <div style="display:flex;align-items:center;gap:12px;position:relative;">
           <button id="notif-btn" onclick="SmartBakers.notifications.togglePanel()" style="position:relative;background:none;border:none;cursor:pointer;padding:8px;border-radius:10px;">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#3e2723" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
-            <span id="notif-badge" style="position:absolute;top:4px;right:2px;background:#e53935;color:#fff;font-size:10px;font-weight:700;width:16px;height:16px;border-radius:999px;display:flex;align-items:center;justify-content:center;">${SmartBakers.notifications.unreadCount()}</span>
+            <span id="notif-badge" style="position:absolute;top:4px;right:2px;background:#e53935;color:#fff;font-size:10px;font-weight:700;width:16px;height:16px;border-radius:999px;display:none;align-items:center;justify-content:center;font-family:'DM Sans',sans-serif;"></span>
           </button>
+          <div id="notif-panel" style="display:none;position:absolute;top:calc(100% + 8px);right:0;width:320px;background:#fffcf7;border:1px solid rgba(200,149,108,0.2);border-radius:16px;box-shadow:0 16px 40px rgba(62,39,35,0.15);z-index:50;overflow:hidden;">
+            <div style="padding:14px 18px;border-bottom:1px solid rgba(200,149,108,0.1);display:flex;align-items:center;justify-content:space-between;">
+              <span style="font-family:'Playfair Display',serif;color:#3e2723;font-size:16px;font-weight:700;">Notifications</span>
+              <button onclick="SmartBakers.notifications.markAllRead()" style="background:none;border:none;color:#c8956c;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:700;cursor:pointer;">Mark all read</button>
+            </div>
+            <div id="notif-list"></div>
+          </div>
           <div style="display:flex;align-items:center;gap:8px;padding:6px 12px;background:rgba(200,149,108,0.1);border-radius:12px;border:1px solid rgba(200,149,108,0.2);">
             <div style="width:30px;height:30px;border-radius:999px;background:linear-gradient(135deg,#c8956c,#a67c52);display:flex;align-items:center;justify-content:center;color:#fff;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:700;">${SmartBakers.utils.escHtml(
               (user.name || "G").charAt(0).toUpperCase()
@@ -779,26 +690,10 @@ const SmartBakers = {
             </div>
           </div>
           <button onclick="SmartBakers.session.clear()" style="background:none;border:1px solid rgba(200,149,108,0.3);color:#8d6e63;padding:8px 14px;border-radius:10px;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;cursor:pointer;">Sign Out</button>
-          <div id="notif-panel" style="display:none;position:absolute;top:100%;right:16px;width:320px;background:#fffcf7;border:1px solid rgba(200,149,108,0.2);border-radius:16px;box-shadow:0 16px 40px rgba(62,39,35,0.15);z-index:50;overflow:hidden;">
-            <div style="padding:14px 18px;border-bottom:1px solid rgba(200,149,108,0.1);display:flex;align-items:center;justify-content:space-between;">
-              <span style="font-family:'Playfair Display',serif;color:#3e2723;font-size:16px;font-weight:700;">Notifications</span>
-              <button onclick="SmartBakers.notifications.markAllRead()" style="background:none;border:none;color:#c8956c;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:700;cursor:pointer;">Mark all read</button>
-            </div>
-            <div id="notif-list"></div>
-          </div>
         </div>
       `;
 
       SmartBakers.notifications._updateBadge();
-
-      document.addEventListener("click", (event) => {
-        const panel = document.getElementById("notif-panel");
-        const button = document.getElementById("notif-btn");
-        if (!panel || !button) return;
-        if (!panel.contains(event.target) && !button.contains(event.target)) {
-          panel.style.display = "none";
-        }
-      });
     },
   },
 
@@ -918,7 +813,20 @@ const SmartBakers = {
     const ok = SmartBakers.auth.check();
     if (!ok) return;
 
+    // Inject nav into pages that use [data-sb-nav].
+    // Pages with self-built navs (customer_home, bakery_marketplace_dashboard_search)
+    // skip this automatically since inject() checks for [data-sb-nav].
     SmartBakers.notifications.inject();
+
+    // Single click-outside listener to close the notif panel on any page.
+    document.addEventListener("click", (event) => {
+      const panel = document.getElementById("notif-panel");
+      const button = document.getElementById("notif-btn");
+      if (!panel || !button) return;
+      if (!panel.contains(event.target) && !button.contains(event.target)) {
+        panel.style.display = "none";
+      }
+    });
 
     if (SmartBakers.session.isLoggedIn()) {
       SmartBakers.chat.inject();
@@ -929,22 +837,13 @@ const SmartBakers = {
         const action = element.getAttribute("data-action");
         if (action === "logout") SmartBakers.session.clear();
         if (action === "home") SmartBakers.auth.goHome();
+        if (action === "discover") window.location.href = "customer_home.html";
         if (action === "portfolio") window.location.href = "main_page_portfolio.html";
-        if (action === "marketplace") {
-          window.location.href = "bakery_marketplace_dashboard_search.html";
-        }
-        if (action === "post-request") {
-          window.location.href = "posting_baking_request.html";
-        }
-        if (action === "baker-menu") {
-          window.location.href = "baker_upload_items.html";
-        }
-        if (action === "register") {
-          window.location.href = "guest_register.html";
-        }
-        if (action === "ai-match") {
-          window.location.href = "ai_match_suggestions.html";
-        }
+        if (action === "marketplace") window.location.href = "bakery_marketplace_dashboard_search.html";
+        if (action === "post-request") window.location.href = "posting_baking_request.html";
+        if (action === "baker-menu") window.location.href = "baker_upload_items.html";
+        if (action === "register") window.location.href = "guest_register.html";
+        if (action === "ai-match") window.location.href = "ai_match_suggestions.html";
       });
     });
 

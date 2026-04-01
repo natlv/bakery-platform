@@ -148,6 +148,8 @@
     }
     if (!valid) return;
 
+    // --- DEMO login (replace with real API call for SQL DB) ---
+    // In production: POST /api/auth/login { email, password, role }
     const btn = document.getElementById('cta-btn');
     btn.textContent = 'Signing in…';
     btn.disabled = true;
@@ -164,14 +166,14 @@
       // Route by role
       window.location.href = currentRole === 'Baker'
         ? 'bakery_marketplace_dashboard_search.html'
-        : 'main_page_portfolio.html';
+        : 'customer_home.html';
     } catch (err) {
         document.getElementById('login-err').textContent = err.message;
         document.getElementById('login-err').style.display = 'block';
         
         btn.textContent = 'Sign In';
         btn.disabled = false;
-    }
+    }, 900);
   }
 
   // Allow Enter key

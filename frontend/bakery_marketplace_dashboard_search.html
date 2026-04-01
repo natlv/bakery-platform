@@ -1,75 +1,269 @@
 <!doctype html>
-<html lang="en" class="h-full">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Smart Bakers — Marketplace</title>
   <script src="master_controller.js"></script>
   <script src="https://cdn.tailwindcss.com/3.4.17"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
   <style>
-    html,body{height:100%;margin:0;}*{box-sizing:border-box;}
-    .flour-bg{background:radial-gradient(ellipse at 20% 50%,rgba(255,248,240,.15) 0%,transparent 50%),radial-gradient(ellipse at 80% 20%,rgba(210,180,140,.1) 0%,transparent 40%),linear-gradient(135deg,#3e2723 0%,#4e342e 25%,#5d4037 50%,#4e342e 75%,#3e2723 100%);}
-    .flour-dust{position:fixed;inset:0;opacity:.1;pointer-events:none;background-image:radial-gradient(circle at 15% 25%,#fff 1px,transparent 1px),radial-gradient(circle at 45% 15%,#fff .5px,transparent .5px),radial-gradient(circle at 75% 35%,#fff 1.5px,transparent 1.5px),radial-gradient(circle at 85% 75%,#fff 1px,transparent 1px);}
-    .glass{background:rgba(255,252,247,.92);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,.6);}
-    .inp{padding:10px 14px;border:1px solid rgba(200,149,108,.3);border-radius:10px;font-family:'DM Sans',sans-serif;color:#3e2723;font-size:13px;background:rgba(255,255,255,.7);outline:none;transition:all .2s;width:100%;}
-    .inp:focus{border-color:#c8956c;box-shadow:0 0 0 3px rgba(200,149,108,.1);}
-    .request-card{background:rgba(255,252,247,.96);border:1px solid rgba(200,149,108,.18);border-radius:20px;overflow:hidden;transition:all .35s cubic-bezier(.34,1.56,.64,1);cursor:pointer;}
-    .request-card:hover{transform:translateY(-8px);box-shadow:0 24px 48px rgba(62,39,35,.16);border-color:rgba(200,149,108,.4);}
-    .badge{display:inline-block;padding:4px 10px;border-radius:8px;font-size:11px;font-weight:600;background:rgba(200,149,108,.12);color:#8d6e63;border:1px solid rgba(200,149,108,.2);font-family:'DM Sans',sans-serif;}
-    .price-tag{background:linear-gradient(135deg,#c8956c,#a67c52);color:#fffaf5;font-weight:700;border-radius:10px;padding:7px 13px;font-size:15px;font-family:'DM Sans',sans-serif;}
-    .bid-btn{width:100%;padding:11px;background:linear-gradient(135deg,#c8956c,#a67c52);color:#fffaf5;border:none;border-radius:11px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:all .2s;}
-    .bid-btn:hover{transform:translateY(-1px);box-shadow:0 6px 16px rgba(200,149,108,.3);}
-    .sort-chip{padding:6px 14px;border-radius:20px;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;cursor:pointer;border:1px solid rgba(200,149,108,.3);transition:all .2s;background:transparent;color:#8d6e63;}
-    .sort-chip.active{background:linear-gradient(135deg,#c8956c,#a67c52);color:#fffaf5;border-color:transparent;}
+    *{box-sizing:border-box;margin:0;padding:0;}
+    html,body{min-height:100%;font-family:'DM Sans',sans-serif;}
+
+    /* ── Background ── */
+    .flour-bg{
+      min-height:100vh;
+      background:
+        radial-gradient(ellipse 80% 60% at 15% 0%,rgba(255,200,140,.13) 0%,transparent 60%),
+        radial-gradient(ellipse 60% 50% at 90% 30%,rgba(180,110,60,.12) 0%,transparent 55%),
+        linear-gradient(160deg,#2a1a10 0%,#3e2416 30%,#4e301e 60%,#3a2010 100%);
+    }
+    .flour-dust{position:fixed;inset:0;pointer-events:none;opacity:.07;
+      background-image:
+        radial-gradient(circle at 8% 18%,#fff 1px,transparent 1px),
+        radial-gradient(circle at 28% 62%,#fff .7px,transparent .7px),
+        radial-gradient(circle at 55% 12%,#fff 1.2px,transparent 1.2px),
+        radial-gradient(circle at 72% 48%,#fff .8px,transparent .8px),
+        radial-gradient(circle at 91% 78%,#fff 1px,transparent 1px);
+    }
+
+    .glass{background:rgba(255,250,242,.91);backdrop-filter:blur(22px);border:1px solid rgba(255,255,255,.55);}
+
+    /* ── Nav ── */
+    .nav-wrap{position:sticky;top:0;z-index:100;background:rgba(38,22,12,.82);backdrop-filter:blur(20px);border-bottom:1px solid rgba(212,147,90,.12);}
+    .nav-inner{display:flex;align-items:center;justify-content:space-between;height:64px;padding:0 32px;gap:16px;}
+    .nav-logo{display:flex;align-items:center;gap:10px;text-decoration:none;}
+    .nav-logo-icon{width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#d4935a,#a06030);display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0;}
+    .nav-logo-text{font-family:'Playfair Display',serif;font-size:19px;font-weight:700;color:#fff5e8;}
+    .nav-links{display:flex;align-items:center;gap:2px;}
+    .nav-link{padding:7px 14px;border-radius:20px;font-size:13px;font-weight:500;color:rgba(255,245,232,.6);cursor:pointer;transition:all .2s;text-decoration:none;white-space:nowrap;}
+    .nav-link:hover{color:#fff5e8;background:rgba(255,200,140,.08);}
+    .nav-link.active{color:#fff5e8;background:rgba(212,147,90,.18);border:1px solid rgba(212,147,90,.22);}
+
+    /* ── Account dropdown ── */
+    .acct-wrap{position:relative;}
+    .acct-pill{display:flex;align-items:center;gap:8px;padding:5px 12px 5px 5px;border-radius:999px;cursor:pointer;transition:all .2s;border:1px solid rgba(212,147,90,.25);background:rgba(212,147,90,.1);}
+    .acct-pill:hover{background:rgba(212,147,90,.2);border-color:rgba(212,147,90,.4);}
+    .acct-avatar{width:26px;height:26px;border-radius:999px;background:linear-gradient(135deg,#d4935a,#a06030);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;flex-shrink:0;}
+    .acct-name{font-size:13px;font-weight:600;color:#fff5e8;}
+    .acct-chevron{font-size:10px;color:rgba(255,245,232,.45);transition:transform .2s;}
+    .acct-chevron.open{transform:rotate(180deg);}
+    .dropdown{position:absolute;top:calc(100% + 8px);right:0;width:224px;border-radius:16px;overflow:hidden;box-shadow:0 20px 48px rgba(20,10,4,.45);display:none;}
+    .dropdown.open{display:block;animation:dropIn .18s ease-out both;}
+    @keyframes dropIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
+    .dropdown-header{padding:14px 16px 12px;border-bottom:1px solid rgba(212,147,90,.12);background:#fffcf7;}
+    .dropdown-body{background:#fffcf7;}
+    .dropdown-item{display:flex;align-items:center;gap:10px;padding:10px 16px;font-size:13px;font-weight:500;color:#3e2412;cursor:pointer;transition:background .15s;text-decoration:none;}
+    .dropdown-item:hover{background:rgba(212,147,90,.07);}
+    .di-icon{font-size:15px;width:20px;text-align:center;flex-shrink:0;}
+    .dropdown-divider{height:1px;background:rgba(212,147,90,.1);margin:3px 0;}
+    .dropdown-item.danger{color:#c0392b;}
+    .dropdown-item.danger:hover{background:rgba(192,57,43,.05);}
+    .coming-soon-pill{margin-left:auto;font-size:10px;background:rgba(212,147,90,.12);color:#a06030;padding:2px 7px;border-radius:20px;font-weight:700;}
+
+    /* ── Hero ── */
+    .hero{padding:52px 32px 36px;max-width:860px;margin:0 auto;text-align:center;}
+    .hero-eyebrow{display:inline-flex;align-items:center;gap:6px;padding:5px 14px;border-radius:999px;background:rgba(212,147,90,.14);border:1px solid rgba(212,147,90,.28);font-size:11px;font-weight:700;color:#e8b07a;letter-spacing:.6px;text-transform:uppercase;margin-bottom:20px;}
+    .hero-title{font-family:'Playfair Display',serif;font-size:clamp(28px,4.5vw,48px);font-weight:700;color:#fff8f0;line-height:1.15;margin-bottom:12px;}
+    .hero-title em{font-style:italic;color:#d4935a;}
+    .hero-sub{font-size:15px;color:rgba(255,248,240,.5);line-height:1.65;max-width:540px;margin:0 auto 32px;}
+
+    /* ── Search bar ── */
+    .search-bar{display:flex;border-radius:14px;overflow:hidden;box-shadow:0 8px 32px rgba(20,10,4,.3);border:1px solid rgba(212,147,90,.28);background:rgba(255,250,242,.96);}
+    .search-icon-wrap{display:flex;align-items:center;padding:0 14px;color:#a06030;font-size:17px;flex-shrink:0;}
+    .search-inp{flex:1;padding:15px 8px;border:none;background:transparent;font-family:'DM Sans',sans-serif;font-size:14px;color:#2a1a10;outline:none;min-width:0;}
+    .search-inp::placeholder{color:#c0987a;}
+
+    /* ── Stats bar ── */
+    .stats-bar{display:flex;gap:12px;justify-content:center;margin-top:24px;flex-wrap:wrap;}
+    .stat-pill{display:flex;align-items:center;gap:8px;padding:8px 18px;border-radius:999px;background:rgba(255,250,242,.08);border:1px solid rgba(212,147,90,.18);}
+    .stat-num{font-family:'Playfair Display',serif;font-size:20px;font-weight:700;color:#e8b07a;}
+    .stat-lbl{font-size:12px;color:rgba(255,248,240,.5);}
+
+    /* ── Filter panel ── */
+    .filter-panel{max-width:1200px;margin:0 auto;padding:0 32px 20px;}
+    .filter-inner{border-radius:16px;padding:16px 20px;display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;}
+    .filter-group{display:flex;flex-direction:column;gap:5px;flex:1;min-width:140px;}
+    .filter-label{font-size:11px;font-weight:700;color:#3e2412;letter-spacing:.4px;text-transform:uppercase;}
+    .inp{padding:9px 13px;border:1px solid rgba(212,147,90,.3);border-radius:10px;font-family:'DM Sans',sans-serif;color:#3e2412;font-size:13px;background:rgba(255,255,255,.8);outline:none;transition:all .2s;width:100%;}
+    .inp:focus{border-color:#d4935a;box-shadow:0 0 0 3px rgba(212,147,90,.12);}
+
+    /* ── Sort chips ── */
+    .sort-row{max-width:1200px;margin:0 auto;padding:0 32px 20px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
+    .sort-lbl{font-size:12px;color:rgba(255,248,240,.4);font-weight:600;}
+    .sort-chip{padding:6px 14px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;border:1px solid rgba(212,147,90,.22);color:rgba(255,248,240,.5);background:transparent;transition:all .2s;}
+    .sort-chip:hover{border-color:rgba(212,147,90,.5);color:#e8b07a;}
+    .sort-chip.active{background:linear-gradient(135deg,#d4935a,#a06030);color:#fff5e8;border-color:transparent;}
+
+    /* ── Results meta ── */
+    .results-meta{max-width:1200px;margin:0 auto;padding:0 32px 14px;font-size:13px;color:rgba(255,248,240,.38);}
+
+    /* ── Grid ── */
+    .section{max-width:1200px;margin:0 auto;padding:0 32px 64px;}
+    .requests-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:18px;}
+
+    /* ── Request Card ── */
+    .request-card{border-radius:18px;overflow:hidden;cursor:pointer;transition:all .38s cubic-bezier(.34,1.4,.64,1);}
+    .request-card:hover{transform:translateY(-9px);box-shadow:0 26px 52px rgba(20,10,4,.32);}
+    .card-img{height:130px;display:flex;align-items:center;justify-content:center;font-size:60px;background:linear-gradient(135deg,rgba(212,147,90,.1),rgba(160,96,48,.07));overflow:hidden;position:relative;}
+    .card-img img{width:100%;height:100%;object-fit:cover;}
+    .urgent-badge{position:absolute;top:9px;right:9px;padding:3px 9px;border-radius:999px;font-size:10px;font-weight:700;letter-spacing:.2px;}
+    .card-body{padding:16px;}
+    .card-top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:8px;}
+    .card-title{font-family:'Playfair Display',serif;font-size:16px;font-weight:600;color:#3e2412;line-height:1.25;flex:1;}
+    .price-tag{background:linear-gradient(135deg,#d4935a,#a06030);color:#fff5e8;font-weight:700;border-radius:9px;padding:5px 11px;font-size:14px;white-space:nowrap;flex-shrink:0;}
+    .card-desc{font-size:12px;color:#7a5a40;line-height:1.5;margin-bottom:10px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+    .card-tags{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px;}
+    .ctag{padding:3px 8px;border-radius:6px;font-size:10px;font-weight:600;background:rgba(212,147,90,.1);color:#a06030;border:1px solid rgba(212,147,90,.18);}
+    .diet-tag{padding:3px 8px;border-radius:6px;font-size:10px;font-weight:600;background:rgba(107,143,94,.1);color:#4a7c3f;border:1px solid rgba(107,143,94,.2);}
+    .card-meta{display:flex;justify-content:space-between;align-items:center;margin-bottom:13px;}
+    .meta-item{font-size:12px;}
+    .bid-btn{width:100%;padding:11px;background:linear-gradient(135deg,#d4935a,#a06030);color:#fff5e8;border:none;border-radius:11px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:700;cursor:pointer;transition:all .2s;}
+    .bid-btn:hover{transform:translateY(-1px);box-shadow:0 6px 18px rgba(212,147,90,.32);}
+
+    /* ── Menu CTA banner ── */
+    .menu-cta{max-width:1200px;margin:0 auto 20px;padding:0 32px;}
+    .menu-cta-inner{border-radius:14px;padding:14px 20px;display:flex;align-items:center;gap:12px;background:rgba(212,147,90,.1);border:1px solid rgba(212,147,90,.22);}
+    .menu-cta-text{font-size:13px;color:rgba(255,248,240,.65);flex:1;}
+    .menu-cta-btn{padding:8px 16px;background:rgba(212,147,90,.2);color:#f5c89a;border:1px solid rgba(212,147,90,.4);border-radius:9px;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:700;cursor:pointer;transition:all .2s;white-space:nowrap;flex-shrink:0;}
+    .menu-cta-btn:hover{background:rgba(212,147,90,.32);}
+
+    /* ── Empty state ── */
+    .empty-msg{display:none;text-align:center;padding:60px 20px;font-size:15px;color:rgba(255,248,240,.3);}
+
     @keyframes slideUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
-    .slide-up{animation:slideUp .45s ease-out both;}
-    .diet-tag{display:inline-block;padding:3px 8px;border-radius:6px;font-size:10px;font-weight:600;background:rgba(107,143,94,.1);color:#4a7c3f;border:1px solid rgba(107,143,94,.2);font-family:'DM Sans',sans-serif;}
+    .slide-up{animation:slideUp .42s ease-out both;}
+    @keyframes fadeUp{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
+    .fu{animation:fadeUp .5s ease-out both;}
+    .d1{animation-delay:.04s}.d2{animation-delay:.1s}.d3{animation-delay:.18s}.d4{animation-delay:.26s}
   </style>
 </head>
-<body class="h-full">
-<div class="flour-bg h-full w-full flex flex-col relative overflow-auto">
+<body>
+<div class="flour-bg">
   <div class="flour-dust"></div>
 
-  <!-- Nav -->
-  <nav data-sb-nav class="glass sticky top-0 z-20 shadow-sm" style="padding:16px 24px;display:flex;align-items:center;justify-content:space-between;position:relative;"></nav>
+  <!-- ══ NAV ══ -->
+  <div class="nav-wrap">
+    <div class="nav-inner">
+      <a href="bakery_marketplace_dashboard_search.html" class="nav-logo">
+        <div class="nav-logo-icon">🍞</div>
+        <span class="nav-logo-text">Smart Bakers</span>
+      </a>
 
-  <!-- Page Content -->
-  <div class="flex-1 w-full max-w-7xl mx-auto px-6 py-8 relative z-10">
+      <nav class="nav-links">
+        <a href="bakery_marketplace_dashboard_search.html" class="nav-link active">Marketplace</a>
+        <a href="baker_upload_items.html" class="nav-link">My Menu</a>
+      </nav>
 
-    <div style="margin-bottom:24px;">
-      <h1 style="font-family:'Playfair Display',serif;color:#fffaf5;font-size:34px;font-weight:700;margin:0 0 6px;">Bakery Request Marketplace</h1>
-      <p style="font-family:'DM Sans',sans-serif;color:rgba(255,250,245,.6);font-size:15px;margin:0 0 16px;">Browse open requests and place your best bid</p>
-      
-      <!-- Baker quick-action banner (might need to delete since the AI matching is added but check website first) -->
-      <div style="display:flex;gap:10px;align-items:center;background:rgba(255,252,247,.07);border:1px solid rgba(200,149,108,.22);border-radius:14px;padding:12px 18px;">
-        <span style="font-size:20px;">🧁</span>
-        <span style="font-family:'DM Sans',sans-serif;color:rgba(255,250,245,.75);font-size:13px;">Showcase your speciality — update your menu so customers know what you offer.</span>
-        <a href="baker_upload_items.html" style="margin-left:auto;text-decoration:none;white-space:nowrap;">
-          <button style="padding:8px 16px;background:rgba(200,149,108,.22);color:#f5c89a;border:1px solid rgba(200,149,108,.4);border-radius:9px;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:700;cursor:pointer;transition:all .2s;" onmouseover="this.style.background='rgba(200,149,108,.35)'" onmouseout="this.style.background='rgba(200,149,108,.22)'">Manage My Menu →</button>
-        </a>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <!-- Bell -->
+        <div style="position:relative;">
+          <button id="notif-btn" onclick="SmartBakers.notifications.togglePanel()" style="position:relative;background:none;border:none;cursor:pointer;padding:8px;border-radius:10px;color:rgba(255,245,232,.6);transition:color .2s;" onmouseover="this.style.color='#fff5e8'" onmouseout="this.style.color='rgba(255,245,232,.6)'">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+            <span id="notif-badge" style="position:absolute;top:3px;right:1px;background:#e53935;color:#fff;font-size:10px;font-weight:700;width:16px;height:16px;border-radius:999px;display:none;align-items:center;justify-content:center;font-family:'DM Sans',sans-serif;"></span>
+          </button>
+          <div id="notif-panel" style="display:none;position:absolute;top:calc(100% + 8px);right:-40px;width:310px;background:#fffcf7;border:1px solid rgba(200,149,108,.2);border-radius:16px;box-shadow:0 16px 40px rgba(20,10,4,.3);z-index:200;overflow:hidden;">
+            <div style="padding:13px 16px;border-bottom:1px solid rgba(200,149,108,.1);display:flex;align-items:center;justify-content:space-between;">
+              <span style="font-family:'Playfair Display',serif;color:#3e2723;font-size:15px;font-weight:700;">Notifications</span>
+              <button onclick="SmartBakers.notifications.markAllRead()" style="background:none;border:none;color:#c8956c;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:700;cursor:pointer;">Mark all read</button>
+            </div>
+            <div id="notif-list"></div>
+          </div>
+        </div>
+
+        <!-- Account pill + dropdown -->
+        <div class="acct-wrap">
+          <div class="acct-pill" id="acct-pill" onclick="toggleDropdown()">
+            <div class="acct-avatar" id="acct-avatar">?</div>
+            <span class="acct-name" id="acct-name">Guest</span>
+            <span class="acct-chevron" id="acct-chevron">▾</span>
+          </div>
+          <div class="glass dropdown" id="acct-dropdown">
+            <div class="dropdown-header">
+              <div style="font-size:14px;font-weight:700;color:#3e2412;" id="dd-name">Guest</div>
+              <div style="font-size:11px;color:#a08060;margin-top:2px;" id="dd-email"></div>
+            </div>
+            <div class="dropdown-body">
+              <div style="padding:4px 0;">
+                <a href="bakery_marketplace_dashboard_search.html" class="dropdown-item">
+                  <span class="di-icon">🥖</span> Marketplace
+                </a>
+                <a href="baker_upload_items.html" class="dropdown-item">
+                  <span class="di-icon">🍰</span> My Menu
+                </a>
+                <div class="dropdown-divider"></div>
+                <div class="dropdown-item" style="cursor:default;pointer-events:none;opacity:.7;">
+                  <span class="di-icon">⚙️</span> Account Settings
+                  <span class="coming-soon-pill">Soon</span>
+                </div>
+                <div class="dropdown-divider"></div>
+                <div class="dropdown-item danger" onclick="SmartBakers.session.clear()">
+                  <span class="di-icon">🚪</span> Sign Out
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
-
-    <!-- AI Matching -->
-  <div class="glass rounded-2xl p-5 mb-5">
-      <h2 style="font-family:'Playfair Display',serif;color:#3e2723;font-siz>
-      <p style="font-family:'DM Sans',sans-serif;color:#8d6e63;font-size:13p>
-    <div style="display:flex;gap:10px;align-items:center;">
-      <input class="inp" id="match-inp" placeholder="e.g. halal birthday cak>
-      <button class="bid-btn" style="width:auto;padding:11px 20px;white-spac>
-    </div>
-   <div id="match-results" style="margin-top:16px;"></div>
   </div>
-    
-    <!-- Filters -->
-    <div class="glass rounded-2xl p-4 mb-5" style="display:grid;grid-template-columns:2fr 1fr 1fr;gap:12px;align-items:end;">
-      <div>
-        <label style="font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;color:#3e2723;display:block;margin-bottom:5px;">Search Requests</label>
-        <input class="inp" id="search-inp" placeholder="Wedding cake, sourdough bread…" oninput="applyFilters()">
+
+  <!-- ══ HERO ══ -->
+  <div class="hero">
+    <div class="hero-eyebrow fu d1">🥖 Baker Marketplace</div>
+    <h1 class="hero-title fu d2">
+      Find your next<br><em>great order</em>
+    </h1>
+    <p class="hero-sub fu d3">
+      Browse open customer requests, filter by what you bake best, and place your bid.
+    </p>
+
+    <!-- Search -->
+    <div class="search-bar fu d4">
+      <div class="search-icon-wrap">🔍</div>
+      <input class="search-inp" id="search-inp"
+        placeholder="Wedding cake, sourdough bread, cupcakes…"
+        oninput="applyFilters()">
+    </div>
+
+    <!-- Live stats -->
+    <div class="stats-bar fu d4">
+      <div class="stat-pill">
+        <span class="stat-num" id="stat-open">—</span>
+        <span class="stat-lbl">Open requests</span>
       </div>
-      <div>
-        <label style="font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;color:#3e2723;display:block;margin-bottom:5px;">Variety</label>
+      <div class="stat-pill">
+        <span class="stat-num" id="stat-urgent">—</span>
+        <span class="stat-lbl">Due this week</span>
+      </div>
+      <div class="stat-pill">
+        <span class="stat-num" id="stat-avg">—</span>
+        <span class="stat-lbl">Avg. budget</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ MENU CTA ══ -->
+  <div class="menu-cta">
+    <div class="menu-cta-inner">
+      <span style="font-size:20px;">🧁</span>
+      <span class="menu-cta-text">Showcase your speciality — keep your menu updated so customers know exactly what you offer.</span>
+      <a href="baker_upload_items.html" style="text-decoration:none;">
+        <button class="menu-cta-btn">Manage My Menu →</button>
+      </a>
+    </div>
+  </div>
+
+  <!-- ══ FILTERS ══ -->
+  <div class="filter-panel">
+    <div class="glass filter-inner">
+      <div class="filter-group" style="flex:2;min-width:200px;">
+        <label class="filter-label">Search</label>
+        <input class="inp" id="search-inp-2" placeholder="Wedding cake, sourdough…" oninput="syncSearch(this.value)">
+      </div>
+      <div class="filter-group">
+        <label class="filter-label">Variety</label>
         <select class="inp" id="variety-filter" onchange="applyFilters()">
           <option value="">All Varieties</option>
           <option value="wedding-cake">Wedding Cake</option>
@@ -80,8 +274,8 @@
           <option value="cupcakes">Cupcakes</option>
         </select>
       </div>
-      <div>
-        <label style="font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;color:#3e2723;display:block;margin-bottom:5px;">Budget</label>
+      <div class="filter-group">
+        <label class="filter-label">Budget</label>
         <select class="inp" id="budget-filter" onchange="applyFilters()">
           <option value="">Any Budget</option>
           <option value="0-50">Under $50</option>
@@ -91,23 +285,27 @@
         </select>
       </div>
     </div>
-
-    <!-- Sort chips -->
-    <div style="display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap;align-items:center;">
-      <span style="font-family:'DM Sans',sans-serif;color:rgba(255,250,245,.6);font-size:13px;">Sort:</span>
-      <button class="sort-chip active" onclick="setSort('newest',this)">Newest</button>
-      <button class="sort-chip" onclick="setSort('budget-high',this)">Highest Budget</button>
-      <button class="sort-chip" onclick="setSort('budget-low',this)">Lowest Budget</button>
-      <button class="sort-chip" onclick="setSort('deadline',this)">Deadline Soon</button>
-      <button class="sort-chip" onclick="setSort('fewest-bids',this)">Fewest Bids</button>
-    </div>
-
-    <p id="results-count" style="font-family:'DM Sans',sans-serif;color:rgba(255,250,245,.5);font-size:13px;margin-bottom:16px;"></p>
-
-    <!-- Grid -->
-    <div id="requests-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:20px;"></div>
-    <p id="empty-msg" style="display:none;text-align:center;padding:60px;font-family:'DM Sans',sans-serif;color:rgba(255,250,245,.4);font-size:16px;">No requests match your search.</p>
   </div>
+
+  <!-- ══ SORT ══ -->
+  <div class="sort-row">
+    <span class="sort-lbl">Sort:</span>
+    <button class="sort-chip active" onclick="setSort('newest',this)">Newest</button>
+    <button class="sort-chip" onclick="setSort('budget-high',this)">Highest Budget</button>
+    <button class="sort-chip" onclick="setSort('budget-low',this)">Lowest Budget</button>
+    <button class="sort-chip" onclick="setSort('deadline',this)">Deadline Soon</button>
+    <button class="sort-chip" onclick="setSort('fewest-bids',this)">Fewest Bids</button>
+  </div>
+
+  <!-- ══ RESULTS COUNT ══ -->
+  <div class="results-meta" id="results-count"></div>
+
+  <!-- ══ GRID ══ -->
+  <div class="section">
+    <div class="requests-grid" id="requests-grid"></div>
+    <p class="empty-msg" id="empty-msg">No requests match your search.</p>
+  </div>
+
 </div>
 
 <script>
@@ -115,6 +313,34 @@
   let allRequests = [];
   let filtered = [];
 
+  // ── Dropdown ──────────────────────────────────────────────────────────────────
+  function toggleDropdown() {
+    const dd = document.getElementById('acct-dropdown');
+    const ch = document.getElementById('acct-chevron');
+    const open = dd.classList.toggle('open');
+    ch.classList.toggle('open', open);
+  }
+
+  document.addEventListener('click', e => {
+    const pill = document.getElementById('acct-pill');
+    const dd   = document.getElementById('acct-dropdown');
+    if (pill && dd && !pill.contains(e.target) && !dd.contains(e.target)) {
+      dd.classList.remove('open');
+      document.getElementById('acct-chevron').classList.remove('open');
+    }
+    const np = document.getElementById('notif-panel');
+    const nb = document.getElementById('notif-btn');
+    if (np && nb && !np.contains(e.target) && !nb.contains(e.target)) np.style.display = 'none';
+  });
+
+  // ── Sync the two search inputs ────────────────────────────────────────────────
+  function syncSearch(value) {
+    document.getElementById('search-inp').value = value;
+    document.getElementById('search-inp-2').value = value;
+    applyFilters();
+  }
+
+  // ── Sort ──────────────────────────────────────────────────────────────────────
   function setSort(sort, el) {
     currentSort = sort;
     document.querySelectorAll('.sort-chip').forEach(c => c.classList.remove('active'));
@@ -124,56 +350,70 @@
 
   function budgetMatches(budget, filter) {
     if (!filter) return true;
-    if (filter === '0-50') return budget <= 50;
-    if (filter === '50-100') return budget > 50 && budget <= 100;
+    if (filter === '0-50')    return budget <= 50;
+    if (filter === '50-100')  return budget > 50 && budget <= 100;
     if (filter === '100-300') return budget > 100 && budget <= 300;
-    if (filter === '300+') return budget > 300;
+    if (filter === '300+')    return budget > 300;
     return true;
   }
 
+  // ── Load from API ─────────────────────────────────────────────────────────────
   async function loadRequests() {
     const grid = document.getElementById('requests-grid');
-    grid.innerHTML = '<div class="glass rounded-2xl p-6" style="grid-column:1 / -1;text-align:center;font-family:\'DM Sans\',sans-serif;color:#8d6e63;">Loading marketplace...</div>';
+    grid.innerHTML = `<div class="glass" style="grid-column:1/-1;text-align:center;padding:40px;border-radius:16px;font-size:14px;color:#8d6e63;">Loading marketplace…</div>`;
 
     try {
       const requests = await SmartBakers.api.getRequests({ status: 'open' });
       allRequests = await Promise.all(
         requests.map(async (request) => {
           const bids = await SmartBakers.api.getBids(request.request_id).catch(() => []);
-          return {
-            ...request,
-            bidsCount: Number.isFinite(request.bid_count) ? request.bid_count : bids.length,
-          };
+          return { ...request, bidsCount: Number.isFinite(request.bid_count) ? request.bid_count : bids.length };
         })
       );
+      updateStats();
       applyFilters();
     } catch (error) {
-      grid.innerHTML = `<div class="glass rounded-2xl p-6" style="grid-column:1 / -1;text-align:center;font-family:'DM Sans',sans-serif;color:#c62828;">${SmartBakers.utils.escHtml(error.message || 'Could not load the marketplace.')}</div>`;
+      grid.innerHTML = `<div class="glass" style="grid-column:1/-1;text-align:center;padding:40px;border-radius:16px;font-size:14px;color:#c62828;">${SmartBakers.utils.escHtml(error.message || 'Could not load the marketplace.')}</div>`;
     }
   }
 
+  function updateStats() {
+    document.getElementById('stat-open').textContent = allRequests.length;
+    const urgent = allRequests.filter(r => {
+      const d = SmartBakers.utils.daysUntil(r.deadline);
+      return d !== null && d <= 7;
+    }).length;
+    document.getElementById('stat-urgent').textContent = urgent;
+    const budgets = allRequests.map(r => Number(r.budget || 0)).filter(Boolean);
+    const avg = budgets.length ? Math.round(budgets.reduce((a, b) => a + b, 0) / budgets.length) : 0;
+    document.getElementById('stat-avg').textContent = avg ? SmartBakers.utils.formatCurrency(avg) : '—';
+  }
+
+  // ── Filter + Sort ─────────────────────────────────────────────────────────────
   function applyFilters() {
     const search  = document.getElementById('search-inp').value.toLowerCase();
     const variety = document.getElementById('variety-filter').value;
     const budget  = document.getElementById('budget-filter').value;
 
-    filtered = allRequests.filter(request => {
-      const matchSearch  = request.title.toLowerCase().includes(search) || request.details.toLowerCase().includes(search);
-      const matchVariety = !variety || request.variety === variety;
-      const matchBudget  = budgetMatches(Number(request.budget || 0), budget);
+    filtered = allRequests.filter(r => {
+      const matchSearch  = r.title.toLowerCase().includes(search) || r.details.toLowerCase().includes(search);
+      const matchVariety = !variety || r.variety === variety;
+      const matchBudget  = budgetMatches(Number(r.budget || 0), budget);
       return matchSearch && matchVariety && matchBudget;
     });
 
-    if (currentSort === 'newest')      filtered.sort((a,b) => new Date(b.created_at || 0) - new Date(a.created_at || 0) || b.request_id - a.request_id);
-    if (currentSort === 'budget-high') filtered.sort((a,b) => Number(b.budget || 0) - Number(a.budget || 0));
-    if (currentSort === 'budget-low')  filtered.sort((a,b) => Number(a.budget || 0) - Number(b.budget || 0));
-    if (currentSort === 'deadline')    filtered.sort((a,b) => new Date(a.deadline || 0) - new Date(b.deadline || 0));
-    if (currentSort === 'fewest-bids') filtered.sort((a,b) => Number(a.bidsCount || 0) - Number(b.bidsCount || 0));
+    if (currentSort === 'newest')      filtered.sort((a,b) => new Date(b.created_at||0) - new Date(a.created_at||0) || b.request_id - a.request_id);
+    if (currentSort === 'budget-high') filtered.sort((a,b) => Number(b.budget||0) - Number(a.budget||0));
+    if (currentSort === 'budget-low')  filtered.sort((a,b) => Number(a.budget||0) - Number(b.budget||0));
+    if (currentSort === 'deadline')    filtered.sort((a,b) => new Date(a.deadline||0) - new Date(b.deadline||0));
+    if (currentSort === 'fewest-bids') filtered.sort((a,b) => Number(a.bidsCount||0) - Number(b.bidsCount||0));
 
-    document.getElementById('results-count').textContent = `Showing ${filtered.length} request${filtered.length !== 1 ? 's' : ''}`;
+    document.getElementById('results-count').textContent =
+      filtered.length ? `Showing ${filtered.length} request${filtered.length !== 1 ? 's' : ''}` : '';
     renderCards();
   }
 
+  // ── Render cards ──────────────────────────────────────────────────────────────
   function renderCards() {
     const grid  = document.getElementById('requests-grid');
     const empty = document.getElementById('empty-msg');
@@ -183,102 +423,69 @@
       empty.style.display = 'block';
       return;
     }
-
     empty.style.display = 'none';
 
     filtered.forEach((request, index) => {
       const card = document.createElement('div');
-      card.className = 'request-card slide-up';
-      card.style.animationDelay = `${index * 0.07}s`;
+      card.className = 'request-card glass slide-up';
+      card.style.animationDelay = `${index * 0.06}s`;
 
       const daysLeft = SmartBakers.utils.daysUntil(request.deadline);
-      const urgency = daysLeft !== null && daysLeft <= 3 ? '#e53935' : daysLeft !== null && daysLeft <= 7 ? '#e08a2e' : '#a1887f';
+      const urgencyColor  = daysLeft !== null && daysLeft <= 3 ? '#e53935'
+                          : daysLeft !== null && daysLeft <= 7 ? '#e08a2e'
+                          : 'rgba(255,248,240,.4)';
+      const urgencyBg     = daysLeft !== null && daysLeft <= 3 ? 'rgba(229,57,53,.12)'
+                          : daysLeft !== null && daysLeft <= 7 ? 'rgba(224,138,46,.12)'
+                          : null;
+      const deadlineText  = daysLeft === null ? 'Flexible deadline'
+                          : daysLeft > 0      ? `${daysLeft}d left`
+                          : 'Due now';
+
       const requestUrl = SmartBakers.routing.requestUrl('bakers_splitscreen_bidpage.html', request.request_id);
 
       card.innerHTML = `
-        <div style="height:130px;display:flex;align-items:center;justify-content:center;font-size:64px;background:linear-gradient(135deg,rgba(200,149,108,.08),rgba(210,180,140,.06));overflow:hidden;">
-          ${request.image_url ? `<img src="${SmartBakers.utils.escHtml(request.image_url)}" alt="" style="width:100%;height:100%;object-fit:cover;">` : request.emoji}
+        <div class="card-img">
+          ${request.image_url
+            ? `<img src="${SmartBakers.utils.escHtml(request.image_url)}" alt="">`
+            : `<span>${request.emoji}</span>`}
+          ${urgencyBg ? `<div class="urgent-badge" style="background:${urgencyBg};color:${urgencyColor};">⚡ ${deadlineText}</div>` : ''}
         </div>
-        <div style="padding:18px;">
-          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;">
-            <h3 style="font-family:'Playfair Display',serif;color:#3e2723;font-size:17px;font-weight:600;margin:0;flex:1;margin-right:10px;">${SmartBakers.utils.escHtml(request.title)}</h3>
+        <div class="card-body">
+          <div class="card-top">
+            <div class="card-title">${SmartBakers.utils.escHtml(request.title)}</div>
             <div class="price-tag">${SmartBakers.utils.formatCurrency(request.budget)}</div>
           </div>
-
-          <p style="font-family:'DM Sans',sans-serif;color:#8d6e63;font-size:13px;margin:0 0 12px;line-height:1.5;">${SmartBakers.utils.escHtml(request.details)}</p>
-
-          <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;">
-            <span class="badge">${SmartBakers.utils.escHtml(SmartBakers.utils.sentenceCase(request.variety))}</span>
-            ${request.dietary.map(item => `<span class="diet-tag">${SmartBakers.utils.escHtml(item)}</span>`).join('')}
+          <div class="card-desc">${SmartBakers.utils.escHtml(request.details)}</div>
+          <div class="card-tags">
+            <span class="ctag">${SmartBakers.utils.escHtml(SmartBakers.utils.sentenceCase(request.variety))}</span>
+            ${request.dietary.map(d => `<span class="diet-tag">${SmartBakers.utils.escHtml(d)}</span>`).join('')}
           </div>
-
-          <div style="display:flex;justify-content:space-between;margin-bottom:14px;">
-            <span style="font-family:'DM Sans',sans-serif;font-size:12px;color:${urgency};">📅 ${daysLeft === null ? 'Flexible deadline' : daysLeft > 0 ? `${daysLeft} days left` : 'Due now'}</span>
-            <span style="font-family:'DM Sans',sans-serif;font-size:12px;color:#a1887f;">🏷️ ${request.bidsCount} bid${request.bidsCount !== 1 ? 's' : ''}</span>
+          <div class="card-meta">
+            <span class="meta-item" style="color:${urgencyColor};">
+              📅 ${urgencyBg ? deadlineText : daysLeft === null ? 'Flexible' : `${daysLeft}d left`}
+            </span>
+            <span class="meta-item" style="color:rgba(255,248,240,.4);">
+              🏷️ ${request.bidsCount} bid${request.bidsCount !== 1 ? 's' : ''}
+            </span>
           </div>
-
           <a href="${requestUrl}" onclick="SmartBakers.routing.setActiveRequest(${request.request_id})">
             <button class="bid-btn">Place My Bid →</button>
           </a>
-        </div>
-      `;
+        </div>`;
       grid.appendChild(card);
     });
   }
 
-  async function runMatching() {
-  const query = document.getElementById('match-inp').value.trim();
-  if (!query) {
-    SmartBakers.ui.toast('Please describe what you are looking for', 'warnin>
-    return;
-  }
-
-  const resultsDiv = document.getElementById('match-results');
-  resultsDiv.innerHTML = '<p style="font-family:\'DM Sans\',sans-serif;color>
-
-  try {
-    const data = await SmartBakers.api.matchBakers(query);
-
-    let html = '';
-
-    if (data.warning) {
-      html += `<div class="warning-box">${SmartBakers.utils.escHtml(data.war>
-    }
-
-    const results = data.results || [];
-
-    if (!results.length) {
-      resultsDiv.innerHTML = '<p style="font-family:\'DM Sans\',sans-serif;c>
-      return;
-    }
-
-  html += `<p style="font-family:'DM Sans',sans-serif;color:#3e2723;font-s>
-
-    results.forEach((baker, i) => {
-      html += `
-        <div class="match-card">
-          <div style="display:flex;justify-content:space-between;align-items>
-            <h3 style="font-family:'Playfair Display',serif;color:#3e2723;fo>
-            <span class="match-score">${SmartBakers.utils.escHtml(String(bak>
-          </div>
-          <p style="font-family:'DM Sans',sans-serif;color:#6d4c41;font-size>
-          <div style="display:flex;flex-wrap:wrap;gap:6px;font-family:'DM Sa>
-            <span class="badge">📍 ${SmartBakers.utils.escHtml(baker.locatio>
-            <span class="badge">🎂 ${SmartBakers.utils.escHtml(baker.special>
-            <span class="badge">${SmartBakers.utils.escHtml(baker.halal_stat>
-            <span class="badge">${SmartBakers.utils.escHtml(baker.less_sweet>
-          </div>
-        </div>
-      `;
-    });
-
-    resultsDiv.innerHTML = html;
-
-  } catch (error) {
-    resultsDiv.innerHTML = `<p style="font-family:'DM Sans',sans-serif;color>
-  }
-}
-  document.addEventListener('DOMContentLoaded', loadRequests);
+  // ── Init ──────────────────────────────────────────────────────────────────────
+  document.addEventListener('DOMContentLoaded', () => {
+    const user = SmartBakers.session.get();
+    document.getElementById('acct-name').textContent = user.name || 'Guest';
+    document.getElementById('acct-avatar').textContent = (user.name || 'G').charAt(0).toUpperCase();
+    document.getElementById('dd-name').textContent = user.name || 'Guest';
+    document.getElementById('dd-email').textContent = user.email || '';
+    SmartBakers.notifications._updateBadge();
+    loadRequests();
+  });
 </script>
 </body>
 </html>
