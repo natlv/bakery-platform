@@ -1,0 +1,16 @@
+[Unit]
+Description=Uvicorn instance to serve Bakery Platform
+After=network.target
+
+[Service]
+User=root
+Group=root
+WorkingDirectory=/home/nathanlooenping/bakery-platform/backend
+Environment="KEY_PATH=/home/nathanlooenping/bakery-platform/backend/bucket-key.json"
+Environment="BUCKET_NAME=cs5224-image-bucket"
+Environment="PATH=/home/nathanlooenping/bakery-platform/venv/bin"
+ExecStart=/home/nathanlooenping/bakery-platform/venv/bin/python -m uvicorn main:app --host 0.0.0.0 --port 443
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

@@ -2,9 +2,6 @@ import pg8000
 import requests
 import json
 from sentence_transformers import SentenceTransformer
-from dotenv import load_dotenv
-import os
-
 
 # Load model once when the file is imported
 embed_model = None
@@ -16,21 +13,20 @@ def get_embed_model():
         embed_model = SentenceTransformer('all-MiniLM-L6-v2')
     return embed_model
 
-load_dotenv()
-SEALION_API_KEY = os.getenv("SEALION_API_KEY")
+SEALION_API_KEY = "SEALION_API_KEY"
 SEALION_API_URL = "https://api.sea-lion.ai/v1/chat/completions"
 
 def get_db_connection():
     return pg8000.connect(
-        host=os.getenv("DB_HOST"),
-        database=os.getenv("DB_NAME"),
-        user=os.getenv("DB_USER"),
-        password=os.getenv("DB_PASSWORD"),
+        host="IP_ADDRESS",
+        database="DB_NAME",
+        user="DB_USER",
+        password="DB_PASSWORD"
     )
 
 def match_bakers(request_text: str, top_n: int = 5):
     # Step 1: embed the customer request
-    request_vector = embed_model.encode(request_text).tolist()
+    request_vector = "[" + ",".join(str(x) for x in get_embed_model().encode(request_text).tolist()) + "]"
 
     # Step 2: vector similarity search in Cloud SQL
     conn = get_db_connection()

@@ -508,31 +508,142 @@ const SmartBakers = {
   },
 
   notifications: {
-    _data: [
-      {
-        id: 1,
-        type: "market",
-        text: "Fresh requests are ready for bidding.",
-        time: "Now",
+    // Storage key scoped per user so baker and customer never share notifications
+    _storageKey() {
+      const userId = SmartBakers.storage.get(SmartBakers.config.storage.userId, "guest");
+      return `sb_notifs_${userId}`;
+    },
+
+    // Role-appropriate seed notifications shown on first login
+    _seedForRole(role) {
+      if (role === "Baker") {
+        return [
+          {
+            id: 1,
+            type: "market",
+            text: "New baking requests are waiting — browse the marketplace and place your best bid.",
+            time: "Now",
+            read: false,
+          },
+          {
+            id: 2,
+            type: "tip",
+            text: "Tip: bids that include a clear timeline and a personal note win more often.",
+            time: "Today",
+            read: false,
+          },
+        ];
+      }
+      // Customer seeds
+      return [
+        {
+          id: 1,
+          type: "tip",
+          text: "Tip: adding a clear deadline and dietary notes helps bakers quote faster.",
+          time: "Now",
+          read: false,
+        },
+        {
+          id: 2,
+          type: "tip",
+          text: "Your request is live! Sit tight — bakers will start placing bids shortly.",
+          time: "Today",
+          read: false,
+        },
+      ];
+    },
+
+    // Lazily load from localStorage, seeding if empty
+    _load() {
+      const key = SmartBakers.notifications._storageKey();
+      const saved = SmartBakers.storage.getJson(key, null);
+      if (saved) return saved;
+      const role = SmartBakers.session.get().role || "Customer";
+      const seed = SmartBakers.notifications._seedForRole(role);
+      SmartBakers.storage.setJson(key, seed);
+      return seed;
+    },
+
+    _save(data) {
+      SmartBakers.storage.setJson(SmartBakers.notifications._storageKey(), data);
+    },
+
+    /**
+     * Push a new notification at runtime.
+     *
+     * @param {object} notif
+     * @param {string} notif.type  - "bid" | "accept" | "reject" | "market" | "tip"
+     * @param {string} notif.text  - Human-readable message
+     * @param {string} [notif.time] - Display time label (defaults to "Just now")
+     */
+    push(notif) {
+      const data = SmartBakers.notifications._load();
+      const newItem = {
+        id: Date.now(),
+        type: notif.type || "tip",
+        text: notif.text,
+        time: notif.time || "Just now",
         read: false,
-      },
-      {
-        id: 2,
-        type: "tip",
-        text: "Customers get faster replies when budgets and deadlines are clear.",
-        time: "Today",
-        read: false,
-      },
-    ],
+      };
+      data.unshift(newItem); // newest first
+      SmartBakers.notifications._save(data);
+      SmartBakers.notifications._updateBadge();
+      SmartBakers.notifications._renderPanel();
+    },
+
+    /**
+     * Called by the bid-submission page after a baker places a bid.
+     * Adds a customer-facing notification: "Sarah B. placed a bid on your Wedding Cake."
+     *
+     * @param {string} bakerName   - Display name of the baker
+     * @param {string} requestTitle - Title of the customer's request
+     * @param {number} price        - Bid amount
+     */
+    onBidPlaced(bakerName, requestTitle, price) {
+      SmartBakers.notifications.push({
+        type: "bid",
+        text: `🍰 ${bakerName} placed a bid of ${SmartBakers.utils.formatCurrency(price)} on your "${requestTitle}" request.`,
+        time: "Just now",
+      });
+    },
+
+    /**
+     * Called by the accept-bid page after a customer accepts a bid.
+     * Adds a baker-facing notification: "Congratulations! Your bid was accepted."
+     *
+     * @param {string} customerName  - Display name of the customer
+     * @param {string} requestTitle  - Title of the request
+     * @param {number} price         - The accepted bid price
+     */
+    onBidAccepted(customerName, requestTitle, price) {
+      SmartBakers.notifications.push({
+        type: "accept",
+        text: `🎉 Congratulations! ${customerName} accepted your bid of ${SmartBakers.utils.formatCurrency(price)} for "${requestTitle}". Time to bake!`,
+        time: "Just now",
+      });
+    },
+
+    /**
+     * Called by the accept-bid page after a customer rejects / passes on a bid.
+     *
+     * @param {string} requestTitle - Title of the request
+     */
+    onBidRejected(requestTitle) {
+      SmartBakers.notifications.push({
+        type: "reject",
+        text: `Your bid on "${requestTitle}" was not selected this time. Keep bidding — the right customer is out there!`,
+        time: "Just now",
+      });
+    },
 
     unreadCount() {
-      return SmartBakers.notifications._data.filter((item) => !item.read).length;
+      return SmartBakers.notifications._load().filter((item) => !item.read).length;
     },
 
     markAllRead() {
-      SmartBakers.notifications._data.forEach((item) => {
-        item.read = true;
-      });
+      const data = SmartBakers.notifications._load();
+      data.forEach((item) => { item.read = true; });
+      SmartBakers.notifications._save(data);
       SmartBakers.notifications._updateBadge();
       SmartBakers.notifications._renderPanel();
     },
@@ -549,14 +660,28 @@ const SmartBakers = {
       const list = document.getElementById("notif-list");
       if (!list) return;
 
-      const icons = { market: "🥖", tip: "💡", accept: "✅", bid: "💰" };
-      list.innerHTML = SmartBakers.notifications._data
+      const icons = {
+        market: "🥖",
+        tip:    "💡",
+        accept: "🎉",
+        reject: "😔",
+        bid:    "💰",
+      };
+
+      const data = SmartBakers.notifications._load();
+
+      if (!data.length) {
+        list.innerHTML = `<div style="padding:24px 18px;text-align:center;font-family:'DM Sans',sans-serif;color:#a1887f;font-size:13px;">You're all caught up! 🎉</div>`;
+        return;
+      }
+
+      list.innerHTML = data
         .map(
           (item) => `
             <div style="padding:14px 18px;border-bottom:1px solid rgba(200,149,108,0.08);display:flex;gap:12px;background:${
               item.read ? "transparent" : "rgba(200,149,108,0.05)"
             };">
-              <span style="font-size:18px;">${icons[item.type] || "🔔"}</span>
+              <span style="font-size:18px;flex-shrink:0;">${icons[item.type] || "🔔"}</span>
               <div style="flex:1;">
                 <p style="margin:0 0 4px;font-family:'DM Sans',sans-serif;color:#3e2723;font-size:13px;line-height:1.4;">${SmartBakers.utils.escHtml(
                   item.text
@@ -565,6 +690,7 @@ const SmartBakers = {
                   item.time
                 )}</p>
               </div>
+              ${!item.read ? `<span style="width:7px;height:7px;border-radius:999px;background:#c8956c;flex-shrink:0;margin-top:4px;"></span>` : ""}
             </div>
           `
         )

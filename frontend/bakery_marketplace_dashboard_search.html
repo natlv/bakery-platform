@@ -40,7 +40,8 @@
     <div style="margin-bottom:24px;">
       <h1 style="font-family:'Playfair Display',serif;color:#fffaf5;font-size:34px;font-weight:700;margin:0 0 6px;">Bakery Request Marketplace</h1>
       <p style="font-family:'DM Sans',sans-serif;color:rgba(255,250,245,.6);font-size:15px;margin:0 0 16px;">Browse open requests and place your best bid</p>
-      <!-- Baker quick-action banner -->
+      
+      <!-- Baker quick-action banner (might need to delete since the AI matching is added but check website first) -->
       <div style="display:flex;gap:10px;align-items:center;background:rgba(255,252,247,.07);border:1px solid rgba(200,149,108,.22);border-radius:14px;padding:12px 18px;">
         <span style="font-size:20px;">🧁</span>
         <span style="font-family:'DM Sans',sans-serif;color:rgba(255,250,245,.75);font-size:13px;">Showcase your speciality — update your menu so customers know what you offer.</span>
@@ -50,6 +51,17 @@
       </div>
     </div>
 
+    <!-- AI Matching -->
+  <div class="glass rounded-2xl p-5 mb-5">
+      <h2 style="font-family:'Playfair Display',serif;color:#3e2723;font-siz>
+      <p style="font-family:'DM Sans',sans-serif;color:#8d6e63;font-size:13p>
+    <div style="display:flex;gap:10px;align-items:center;">
+      <input class="inp" id="match-inp" placeholder="e.g. halal birthday cak>
+      <button class="bid-btn" style="width:auto;padding:11px 20px;white-spac>
+    </div>
+   <div id="match-results" style="margin-top:16px;"></div>
+  </div>
+    
     <!-- Filters -->
     <div class="glass rounded-2xl p-4 mb-5" style="display:grid;grid-template-columns:2fr 1fr 1fr;gap:12px;align-items:end;">
       <div>
@@ -214,6 +226,58 @@
     });
   }
 
+  async function runMatching() {
+  const query = document.getElementById('match-inp').value.trim();
+  if (!query) {
+    SmartBakers.ui.toast('Please describe what you are looking for', 'warnin>
+    return;
+  }
+
+  const resultsDiv = document.getElementById('match-results');
+  resultsDiv.innerHTML = '<p style="font-family:\'DM Sans\',sans-serif;color>
+
+  try {
+    const data = await SmartBakers.api.matchBakers(query);
+
+    let html = '';
+
+    if (data.warning) {
+      html += `<div class="warning-box">${SmartBakers.utils.escHtml(data.war>
+    }
+
+    const results = data.results || [];
+
+    if (!results.length) {
+      resultsDiv.innerHTML = '<p style="font-family:\'DM Sans\',sans-serif;c>
+      return;
+    }
+
+  html += `<p style="font-family:'DM Sans',sans-serif;color:#3e2723;font-s>
+
+    results.forEach((baker, i) => {
+      html += `
+        <div class="match-card">
+          <div style="display:flex;justify-content:space-between;align-items>
+            <h3 style="font-family:'Playfair Display',serif;color:#3e2723;fo>
+            <span class="match-score">${SmartBakers.utils.escHtml(String(bak>
+          </div>
+          <p style="font-family:'DM Sans',sans-serif;color:#6d4c41;font-size>
+          <div style="display:flex;flex-wrap:wrap;gap:6px;font-family:'DM Sa>
+            <span class="badge">📍 ${SmartBakers.utils.escHtml(baker.locatio>
+            <span class="badge">🎂 ${SmartBakers.utils.escHtml(baker.special>
+            <span class="badge">${SmartBakers.utils.escHtml(baker.halal_stat>
+            <span class="badge">${SmartBakers.utils.escHtml(baker.less_sweet>
+          </div>
+        </div>
+      `;
+    });
+
+    resultsDiv.innerHTML = html;
+
+  } catch (error) {
+    resultsDiv.innerHTML = `<p style="font-family:'DM Sans',sans-serif;color>
+  }
+}
   document.addEventListener('DOMContentLoaded', loadRequests);
 </script>
 </body>
