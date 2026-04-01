@@ -4,4 +4,7 @@ psycopg2-binary
 python-dotenv
 google-cloud-storage
 python-multipart
+werkzeug
+pg8000
+sentence-transformers
 git+https://github.com/iambcl/cs5224-gcs-bucket-utils.git
