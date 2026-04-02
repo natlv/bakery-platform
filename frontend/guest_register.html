@@ -164,6 +164,13 @@
           <p class="err-msg" id="bakery-name-err">Please add a display name.</p>
         </div>
         <div style="margin-bottom:16px;">
+          <label style="font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;color:#3d2b1f;display:block;margin-bottom:6px;">Bakery Image <span style="color:#a1887f;font-weight:400;">(optional)</span></label>
+          <input class="inp" type="file" id="baker-image" accept="image/*" onchange="handleBakerImageChange(event)" style="padding:10px 12px;">
+          <div id="baker-image-preview-wrap" style="display:none;margin-top:10px;">
+            <img id="baker-image-preview" alt="Bakery preview" style="width:96px;height:96px;object-fit:cover;border-radius:16px;border:1px solid rgba(200,149,108,.25);display:block;">
+          </div>
+        </div>
+        <div style="margin-bottom:16px;">
           <label style="font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;color:#3d2b1f;display:block;margin-bottom:6px;">Location <span style="color:#a1887f;font-weight:400;">(city / neighbourhood)</span></label>
           <input class="inp" type="text" id="baker-location" placeholder="e.g. Tiong Bahru, Singapore">
         </div>
@@ -306,6 +313,7 @@
 <script>
   let selectedRole = null;
   let currentStep = 1;
+  let bakerImageFile = null;
 
   // --- Role selection ---
   function selectRole(role) {
@@ -357,6 +365,33 @@
     const container = document.getElementById(containerId);
     if (!container) return [];
     return Array.from(container.querySelectorAll('.interest-chip.selected')).map(chipLabel);
+  }
+
+  function handleBakerImageChange(event) {
+    const file = event.target.files && event.target.files[0];
+    bakerImageFile = file || null;
+
+    const wrap = document.getElementById('baker-image-preview-wrap');
+    const preview = document.getElementById('baker-image-preview');
+    if (!file) {
+      wrap.style.display = 'none';
+      preview.removeAttribute('src');
+      return;
+    }
+
+    preview.src = URL.createObjectURL(file);
+    wrap.style.display = 'block';
+  }
+
+  async function uploadBakerImageIfNeeded() {
+    if (!bakerImageFile) return '';
+    const formData = new FormData();
+    formData.append('file', bakerImageFile);
+    const result = await SmartBakers.api.request('/upload-image', {
+      method: 'POST',
+      body: formData,
+    });
+    return result?.url || '';
   }
 
   // --- Step navigation ---
@@ -469,6 +504,9 @@
     };
 
     if (role === 'Baker') {
+      btn.textContent = 'Uploading bakery image...';
+      const imageUrl = await uploadBakerImageIfNeeded();
+      btn.textContent = 'Creating your account...';
       Object.assign(payload, {
         bakery_name: document.getElementById('bakery-name').value.trim(),
         baker_location: document.getElementById('baker-location').value.trim(),
@@ -479,8 +517,10 @@
         less_sweet: document.getElementById('baker-less-sweet').value,
         instagram: document.getElementById('baker-instagram').value.trim(),
         website: document.getElementById('baker-website').value.trim(),
+        image_url: imageUrl,
       });
     } else {
+      btn.textContent = 'Creating your account...';
       Object.assign(payload, {
         customer_address: document.getElementById('cust-address').value.trim(),
         customer_phone: document.getElementById('cust-phone').value.trim(),
