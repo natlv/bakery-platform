@@ -167,7 +167,15 @@ const SmartBakers = {
   },
 
   auth: {
-    publicPages: ["", "index.html", "login.html", "forgot_password.html", "reset_password.html", "guest_register.html"],
+    publicPages: ["", "index.html", "login.html", "forgot_password.html", "reset_password.html", "guest_register.html", "customer_home.html"],
+
+    requireLogin() {
+      if (!SmartBakers.session.isLoggedIn()) {
+        window.location.href = "login.html";
+        return false;
+      }
+      return true;
+    },
 
     check() {
       const page = SmartBakers.utils.pageName();
