@@ -809,18 +809,29 @@ const SmartBakers = {
       return "Keep the details specific and practical. The clearer the request or bid is, the easier it is for the other side to say yes.";
     },
 
-    send() {
+    async send() {
       const input = document.getElementById("sb-chat-input");
       const messages = document.getElementById("sb-chat-messages");
       const text = input?.value?.trim();
       if (!text || !messages) return;
+      input.value = "";
 
       messages.innerHTML += `<div class="sb-chat-user">${SmartBakers.utils.escHtml(text)}</div>`;
-      messages.innerHTML += `<div class="sb-chat-ai">${SmartBakers.utils.escHtml(
-        SmartBakers.chat.replyFor(text)
-      )}</div>`;
+      const typingId = "sb-typing-" + Date.now();
+      messages.innerHTML += `<div class="sb-chat-ai" id="${typingId}">Thinking…</div>`;
       messages.scrollTop = messages.scrollHeight;
-      input.value = "";
+
+      try {
+        const result = await SmartBakers.api.request("/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ message: text }),
+        });
+        document.getElementById(typingId).textContent = result.reply;
+      } catch {
+        document.getElementById(typingId).textContent = "Sorry, I couldn't get a response right now.";
+      }
+      messages.scrollTop = messages.scrollHeight;
     },
   },
 

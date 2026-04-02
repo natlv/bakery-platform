@@ -629,6 +629,29 @@ async def match_bakers_endpoint(request: MatchRequest):
     results = match_bakers(request.query)
     return results
 
+class ChatMessage(BaseModel):
+    message: str
+
+@app.post("/chat")
+async def chat(body: ChatMessage):
+    import requests as http_requests
+    api_key = os.getenv("SEALION_API_KEY")
+    response = http_requests.post(
+        "https://api.sea-lion.ai/v1/chat/completions",
+        headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
+        json={
+            "model": "aisingapore/Gemma-SEA-LION-v4-27B-IT",
+            "messages": [
+                {"role": "system", "content": "You are a helpful baking assistant for Smart Bakers, a marketplace connecting customers with local bakers. Help users with pricing, deadlines, writing baking requests, and bidding advice. Keep responses concise and practical."},
+                {"role": "user", "content": body.message}
+            ],
+            "max_tokens": 300,
+            "temperature": 0.7
+        }
+    )
+    result = response.json()
+    return {"reply": result["choices"][0]["message"]["content"]}
+
 class UserSignup(BaseModel):
     email: str
     password: str

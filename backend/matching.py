@@ -13,7 +13,8 @@ def get_embed_model():
         embed_model = SentenceTransformer('all-MiniLM-L6-v2')
     return embed_model
 
-SEALION_API_KEY = "SEALION_API_KEY"
+import os
+SEALION_API_KEY = os.getenv("SEALION_API_KEY")
 SEALION_API_URL = "https://api.sea-lion.ai/v1/chat/completions"
 
 def get_db_connection():
