@@ -75,8 +75,8 @@ def serialize_baker_row(row):
         "baker_id": row[0],
         "name": row[1],
         "description": row[2] or "",
-        "image_url": row[3] or "",
-        "halal_certificate_url": row[4] or "",
+        "image_url": bucket.find_image(row[3]) if row[3] else None,
+        "halal_certificate_url": bucket.find_image(row[4]) if row[4] else None,
         "fulfillment_method": row[5] or "",
         "halal_status": row[6] or "",
         "less_sweet": row[7] or "",
@@ -262,6 +262,7 @@ async def upload_image(file: UploadFile = File(...)):
     
     return {
         "message": "uploaded",
+        "filename": filename,
         "url": signed_url
     }
 

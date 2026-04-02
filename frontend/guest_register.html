@@ -444,7 +444,7 @@
       method: 'POST',
       body: formData,
     });
-    return result?.url || '';
+    return result?.filename || '';
   }
 
   async function uploadHalalCertificateIfNeeded() {
@@ -455,7 +455,7 @@
       method: 'POST',
       body: formData,
     });
-    return result?.url || '';
+    return result?.filename || '';
   }
 
   // --- Step navigation ---
