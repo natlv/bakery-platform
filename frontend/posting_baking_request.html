@@ -205,6 +205,7 @@
     const errEl  = document.getElementById('form-err');
     const errMsg = document.getElementById('form-err-msg');
     const user = SmartBakers.session.get();
+    const customerId = Number(user.numericId);
     errEl.style.display = 'none';
 
     if (!title)   { errMsg.textContent = 'Please enter a title for your request.'; errEl.style.display='block'; return; }
@@ -212,6 +213,11 @@
     if (!budget || parseFloat(budget) <= 0) { errMsg.textContent = 'Please enter a valid budget.'; errEl.style.display='block'; return; }
     if (!deadline) { errMsg.textContent = 'Please select a deadline.'; errEl.style.display='block'; return; }
     if (!desc)    { errMsg.textContent = 'Please describe your request.'; errEl.style.display='block'; return; }
+    if (!Number.isFinite(customerId) || customerId <= 0) {
+      errMsg.textContent = 'Could not determine your customer account. Please sign in again.';
+      errEl.style.display='block';
+      return;
+    }
 
     const btn = document.getElementById('submit-btn');
     btn.textContent = 'Posting…';
@@ -226,7 +232,7 @@
       desc,
     ].filter(Boolean).join('\n');
 
-    formData.append('customer_id', String(user.numericId || 1));
+    formData.append('customer_id', String(customerId));
     formData.append('title', title);
     formData.append('description', fullDescription);
     formData.append('budget', budget);

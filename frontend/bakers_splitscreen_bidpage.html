@@ -180,7 +180,9 @@
     document.getElementById('request-title').textContent = requestData.title;
     document.getElementById('request-description').textContent = requestData.details;
     document.getElementById('request-deadline').textContent = SmartBakers.utils.formatDate(requestData.deadline);
-    document.getElementById('request-owner').textContent = `Customer #${requestData.customer_id || '1'}`;
+    document.getElementById('request-owner').textContent = requestData.customer_id
+      ? `Customer #${requestData.customer_id}`
+      : 'Customer unavailable';
 
     const lowestBid = bids.length
       ? SmartBakers.utils.formatCurrency(Math.min(...bids.map(bid => Number(bid.price || 0)).filter(Number.isFinite)))
