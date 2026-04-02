@@ -69,6 +69,22 @@ def serialize_bid_row(row):
         "created_at": row[6].isoformat() if hasattr(row[6], "isoformat") else row[6],
     }
 
+
+def serialize_baker_row(row):
+    return {
+        "baker_id": row[0],
+        "name": row[1],
+        "description": row[2] or "",
+        "image_url": row[3] or "",
+        "fulfillment_method": row[4] or "",
+        "halal_status": row[5] or "",
+        "less_sweet": row[6] or "",
+        "locations": row[7] or [],
+        "specialties": row[8] or [],
+        "contacts": row[9] or [],
+        "created_at": row[10].isoformat() if hasattr(row[10], "isoformat") else row[10],
+    }
+
 def unique_image_upload(file: UploadFile):
     unique_filename = f"{uuid.uuid4()}_{file.filename}"
     local_path = os.path.join(UPLOAD_DIR, unique_filename)
@@ -235,6 +251,70 @@ def get_request(request_id: int):
         raise HTTPException(status_code=404, detail="Request not found")
 
     return serialize_request_row(row)
+
+
+@app.get("/advertising-bakers")
+def get_advertising_bakers():
+    try:
+        with get_db_cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT
+                    b.baker_id,
+                    b.name,
+                    b.description,
+                    b.image_url,
+                    fm.name AS fulfillment_method,
+                    hs.name AS halal_status,
+                    ls.name AS less_sweet,
+                    COALESCE(
+                        ARRAY_AGG(DISTINCT l.name) FILTER (WHERE l.name IS NOT NULL),
+                        ARRAY[]::text[]
+                    ) AS locations,
+                    COALESCE(
+                        ARRAY_AGG(DISTINCT s.name) FILTER (WHERE s.name IS NOT NULL),
+                        ARRAY[]::text[]
+                    ) AS specialties,
+                    COALESCE(
+                        ARRAY_AGG(DISTINCT c.contact_type || ':' || c.contact_value)
+                            FILTER (WHERE c.contact_value IS NOT NULL),
+                        ARRAY[]::text[]
+                    ) AS contacts,
+                    b.created_at
+                FROM baker b
+                LEFT JOIN fulfillment_method fm
+                    ON fm.fulfillment_method_id = b.fulfillment_method_id
+                LEFT JOIN halal_status hs
+                    ON hs.halal_status_id = b.halal_status_id
+                LEFT JOIN less_sweet ls
+                    ON ls.less_sweet_id = b.less_sweet_id
+                LEFT JOIN baker_location bl
+                    ON bl.baker_id = b.baker_id
+                LEFT JOIN location l
+                    ON l.location_id = bl.location_id
+                LEFT JOIN baker_specialty bs
+                    ON bs.baker_id = b.baker_id
+                LEFT JOIN specialty s
+                    ON s.specialty_id = bs.specialty_id
+                LEFT JOIN contact c
+                    ON c.baker_id = b.baker_id
+                WHERE b.is_advertising = TRUE
+                GROUP BY
+                    b.baker_id,
+                    b.name,
+                    b.description,
+                    b.image_url,
+                    fm.name,
+                    hs.name,
+                    ls.name,
+                    b.created_at
+                ORDER BY b.created_at DESC, b.baker_id DESC
+                """
+            )
+            rows = cursor.fetchall()
+        return [serialize_baker_row(row) for row in rows]
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/bids")
 def submit_bid(

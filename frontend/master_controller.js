@@ -435,6 +435,43 @@ const SmartBakers = {
       };
     },
 
+    normalizeBaker(item) {
+      if (Array.isArray(item)) {
+        return {
+          baker_id: Number(item[0]),
+          name: item[1] || "",
+          description: item[2] || "",
+          image_url: item[3] || "",
+          fulfillment_method: item[4] || "",
+          halal_status: item[5] || "",
+          less_sweet: item[6] || "",
+          locations: Array.isArray(item[7]) ? item[7] : [],
+          specialties: Array.isArray(item[8]) ? item[8] : [],
+          contacts: Array.isArray(item[9]) ? item[9] : [],
+          created_at: item[10] || "",
+        };
+      }
+
+      return {
+        baker_id: Number(item?.baker_id),
+        name: item?.name || "",
+        description: item?.description || "",
+        image_url: item?.image_url || "",
+        fulfillment_method: item?.fulfillment_method || "",
+        halal_status: item?.halal_status || "",
+        less_sweet: item?.less_sweet || "",
+        locations: Array.isArray(item?.locations) ? item.locations : [],
+        specialties: Array.isArray(item?.specialties) ? item.specialties : [],
+        contacts: Array.isArray(item?.contacts) ? item.contacts : [],
+        created_at: item?.created_at || "",
+      };
+    },
+
+    async getBakers() {
+      const payload = await SmartBakers.api.request("/advertising-bakers");
+      return Array.isArray(payload) ? payload.map(SmartBakers.api.normalizeBaker) : [];
+    },
+
     async getRequests(params = {}) {
       const search = new URLSearchParams();
       if (params.customerId) search.set("customer_id", String(params.customerId));

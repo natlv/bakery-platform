@@ -309,6 +309,83 @@ const BAKERIES = [
 let currentCat = 'all';
 let aiResults = null;
 
+function inferCategories(baker) {
+  const hay = `${baker.specialty} ${baker.desc} ${baker.tags.join(' ')} ${baker.fulfillmentMethod} ${baker.halalStatus} ${baker.lessSweet}`.toLowerCase();
+  const cats = new Set();
+  if (/(cake|cakes|cupcake|cupcakes|birthday|wedding|tier)/.test(hay)) cats.add('cakes');
+  if (/(bread|sourdough|loaf|focaccia|brioche)/.test(hay)) cats.add('bread');
+  if (/(pastry|croissant|danish|tart|puff|entremet)/.test(hay)) cats.add('pastry');
+  if (/(cookie|cookies|biscuit|biscuits|shortbread)/.test(hay)) cats.add('cookies');
+  if (/(halal|muslim)/.test(hay)) cats.add('halal');
+  if (/(vegan|plant-based|plant based|dairy-free|dairy free|egg-free|egg free)/.test(hay)) cats.add('vegan');
+  return Array.from(cats);
+}
+
+function inferEmoji(baker) {
+  const hay = `${baker.specialty} ${baker.desc} ${baker.tags.join(' ')}`.toLowerCase();
+  if (/(bread|sourdough|loaf|focaccia|brioche)/.test(hay)) return '🍞';
+  if (/(pastry|croissant|danish|tart|puff)/.test(hay)) return '🥐';
+  if (/(cookie|cookies|biscuit|biscuits|shortbread)/.test(hay)) return '🍪';
+  if (/(vegan|plant-based|plant based)/.test(hay)) return '🌱';
+  if (/(cake|cakes|cupcake|cupcakes|birthday|wedding)/.test(hay)) return '🎂';
+  return '🧁';
+}
+
+function toUiBaker(item) {
+  const location = item.locations[0] || 'Singapore';
+  const tags = [
+    ...item.specialties,
+    item.halal_status && item.halal_status !== 'No' ? item.halal_status : '',
+    item.less_sweet && item.less_sweet !== 'No' ? `Less sweet: ${item.less_sweet}` : '',
+    item.fulfillment_method || '',
+  ].filter(Boolean).slice(0, 6);
+
+  const specialty = item.specialties.length
+    ? item.specialties.join(' • ')
+    : (item.description || 'Custom bakes');
+
+  const baker = {
+    id: item.baker_id,
+    name: item.name,
+    specialty,
+    desc: item.description || 'Custom bakes available on request.',
+    imageUrl: item.image_url || '',
+    emoji: '🧁',
+    tags,
+    rating: 4.8,
+    reviews: item.specialties.length ? item.specialties.length * 12 : 24,
+    location,
+    locations: item.locations,
+    cats: [],
+    halalStatus: item.halal_status || '',
+    fulfillmentMethod: item.fulfillment_method || '',
+    lessSweet: item.less_sweet || '',
+    aiScore: 0,
+  };
+
+  baker.cats = inferCategories(baker);
+  baker.emoji = inferEmoji(baker);
+  return baker;
+}
+
+async function loadBakeries() {
+  const grid = document.getElementById('bakers-grid');
+  const countEl = document.getElementById('bakers-count');
+  grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:60px 20px;font-family:'DM Sans',sans-serif;color:rgba(255,248,240,.5);font-size:15px;">Loading bakeries from the database...</div>`;
+  countEl.textContent = '';
+
+  try {
+    const rows = await SmartBakers.api.getBakers();
+    const nextBakers = rows.map(toUiBaker);
+    BAKERIES.splice(0, BAKERIES.length, ...nextBakers);
+    applyAll();
+  } catch (error) {
+    console.error('Failed to load bakers', error);
+    grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:60px 20px;font-family:'DM Sans',sans-serif;color:#f1c6a0;font-size:15px;">Could not load bakeries from the database right now.</div>`;
+    SmartBakers.ui.toast('Could not load bakeries from the database.', 'error');
+  }
+}
+
 // ── Render ─────────────────────────────────────────────────────────────────────
 function renderBakeries(list) {
   const grid = document.getElementById('bakers-grid');
@@ -334,10 +411,13 @@ function renderBakeries(list) {
 
     const isHalal = b.cats.includes('halal');
     const muisUrl = `https://halal.muis.gov.sg/halal/establishments?name=${encodeURIComponent(b.name)}`;
+    const mediaHtml = b.imageUrl
+      ? `<img src="${b.imageUrl}" alt="${b.name}" style="width:100%;height:100%;object-fit:cover;">`
+      : `<span>${b.emoji}</span>`;
 
     card.innerHTML = `
       <div class="card-img">
-        <span>${b.emoji}</span>
+        ${mediaHtml}
         ${rank ? `<div class="ai-badge">✨ AI Pick #${rank}</div>` : ''}
       </div>
       <div class="card-body">
@@ -490,7 +570,7 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('dd-name').textContent = user.name || 'Guest';
   document.getElementById('dd-email').textContent = user.email || '';
   SmartBakers.notifications._updateBadge();
-  applyAll();
+  loadBakeries();
 });
 </script>
 </body>
