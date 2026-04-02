@@ -76,13 +76,14 @@ def serialize_baker_row(row):
         "name": row[1],
         "description": row[2] or "",
         "image_url": row[3] or "",
-        "fulfillment_method": row[4] or "",
-        "halal_status": row[5] or "",
-        "less_sweet": row[6] or "",
-        "locations": row[7] or [],
-        "specialties": row[8] or [],
-        "contacts": row[9] or [],
-        "created_at": row[10].isoformat() if hasattr(row[10], "isoformat") else row[10],
+        "halal_certificate_url": row[4] or "",
+        "fulfillment_method": row[5] or "",
+        "halal_status": row[6] or "",
+        "less_sweet": row[7] or "",
+        "locations": row[8] or [],
+        "specialties": row[9] or [],
+        "contacts": row[10] or [],
+        "created_at": row[11].isoformat() if hasattr(row[11], "isoformat") else row[11],
     }
 
 
@@ -152,6 +153,7 @@ def customer_identity_column(columns):
 
 
 def insert_baker_profile(cursor, user):
+    baker_columns = table_columns(cursor, "baker")
     fulfillment_method_id = fetch_or_create_lookup_id(
         cursor, "fulfillment_method", "fulfillment_method_id", user.fulfillment_method
     )
@@ -162,27 +164,24 @@ def insert_baker_profile(cursor, user):
         cursor, "less_sweet", "less_sweet_id", user.less_sweet
     )
 
+    values_by_column = {
+        "name": user.bakery_name,
+        "description": user.baker_bio,
+        "image_url": user.image_url,
+        "halal_certificate_url": user.halal_certificate_url,
+        "fulfillment_method_id": fulfillment_method_id,
+        "halal_status_id": halal_status_id,
+        "less_sweet_id": less_sweet_id,
+    }
+    insert_columns = [column for column in values_by_column if column in baker_columns]
+    placeholders = ", ".join(["%s"] * len(insert_columns))
     cursor.execute(
-        """
-        INSERT INTO baker (
-            name,
-            description,
-            image_url,
-            fulfillment_method_id,
-            halal_status_id,
-            less_sweet_id
-        )
-        VALUES (%s, %s, %s, %s, %s, %s)
+        f"""
+        INSERT INTO baker ({", ".join(insert_columns)})
+        VALUES ({placeholders})
         RETURNING baker_id
         """,
-        (
-            user.bakery_name,
-            user.baker_bio,
-            user.image_url,
-            fulfillment_method_id,
-            halal_status_id,
-            less_sweet_id,
-        ),
+        tuple(values_by_column[column] for column in insert_columns),
     )
     baker_id = cursor.fetchone()[0]
 
@@ -399,13 +398,18 @@ def get_request(request_id: int):
 def get_advertising_bakers():
     try:
         with get_db_cursor() as cursor:
+            baker_columns = table_columns(cursor, "baker")
+            halal_certificate_sql = (
+                "b.halal_certificate_url" if "halal_certificate_url" in baker_columns else "NULL::text"
+            )
             cursor.execute(
-                """
+                f"""
                 SELECT
                     b.baker_id,
                     b.name,
                     b.description,
                     b.image_url,
+                    {halal_certificate_sql} AS halal_certificate_url,
                     fm.name AS fulfillment_method,
                     hs.name AS halal_status,
                     ls.name AS less_sweet,
@@ -567,6 +571,7 @@ class UserSignup(BaseModel):
     instagram: Optional[str] = None
     website: Optional[str] = None
     image_url: Optional[str] = None
+    halal_certificate_url: Optional[str] = None
     customer_address: Optional[str] = None
     customer_phone: Optional[str] = None
     customer_interests: List[str] = []

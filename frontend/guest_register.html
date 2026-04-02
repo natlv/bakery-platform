@@ -180,15 +180,23 @@
             <select class="inp" id="baker-fulfillment">
               <option value="Self Pick-up">Self Pick-up</option>
               <option value="Delivery">Delivery</option>
-              <option value="Delivery / Pick-up">Delivery / Pick-up</option>
+              <option value="Delivery / Self Pick-up">Delivery / Self Pick-up</option>
             </select>
           </div>
           <div>
             <label style="font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;color:#3d2b1f;display:block;margin-bottom:6px;">Halal Status</label>
-            <select class="inp" id="baker-halal-status">
+            <select class="inp" id="baker-halal-status" onchange="handleHalalStatusChange()">
               <option value="No">No</option>
               <option value="Yes">Yes</option>
             </select>
+          </div>
+        </div>
+        <div id="halal-cert-fields" style="display:none;margin-bottom:16px;">
+          <label style="font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;color:#3d2b1f;display:block;margin-bottom:6px;">Halal Certificate Image</label>
+          <input class="inp" type="file" id="halal-certificate-image" accept="image/*,.pdf" onchange="handleHalalCertificateChange(event)" style="padding:10px 12px;">
+          <p class="err-msg" id="halal-cert-err">Please upload a halal certificate when halal status is Yes.</p>
+          <div id="halal-cert-preview-wrap" style="display:none;margin-top:10px;">
+            <img id="halal-cert-preview" alt="Halal certificate preview" style="width:96px;height:96px;object-fit:cover;border-radius:16px;border:1px solid rgba(200,149,108,.25);display:block;">
           </div>
         </div>
         <div style="margin-bottom:16px;">
@@ -314,6 +322,7 @@
   let selectedRole = null;
   let currentStep = 1;
   let bakerImageFile = null;
+  let halalCertificateFile = null;
 
   // --- Role selection ---
   function selectRole(role) {
@@ -383,10 +392,59 @@
     wrap.style.display = 'block';
   }
 
+  function handleHalalStatusChange() {
+    const isHalal = document.getElementById('baker-halal-status').value === 'Yes';
+    document.getElementById('halal-cert-fields').style.display = isHalal ? 'block' : 'none';
+    document.getElementById('halal-cert-err').style.display = 'none';
+    if (!isHalal) {
+      halalCertificateFile = null;
+      const input = document.getElementById('halal-certificate-image');
+      const wrap = document.getElementById('halal-cert-preview-wrap');
+      const preview = document.getElementById('halal-cert-preview');
+      if (input) input.value = '';
+      if (preview) preview.removeAttribute('src');
+      if (wrap) wrap.style.display = 'none';
+    }
+  }
+
+  function handleHalalCertificateChange(event) {
+    const file = event.target.files && event.target.files[0];
+    halalCertificateFile = file || null;
+    document.getElementById('halal-cert-err').style.display = 'none';
+
+    const wrap = document.getElementById('halal-cert-preview-wrap');
+    const preview = document.getElementById('halal-cert-preview');
+    if (!file) {
+      wrap.style.display = 'none';
+      preview.removeAttribute('src');
+      return;
+    }
+
+    if (file.type === 'application/pdf') {
+      preview.removeAttribute('src');
+      wrap.style.display = 'none';
+      return;
+    }
+
+    preview.src = URL.createObjectURL(file);
+    wrap.style.display = 'block';
+  }
+
   async function uploadBakerImageIfNeeded() {
     if (!bakerImageFile) return '';
     const formData = new FormData();
     formData.append('file', bakerImageFile);
+    const result = await SmartBakers.api.request('/upload-image', {
+      method: 'POST',
+      body: formData,
+    });
+    return result?.url || '';
+  }
+
+  async function uploadHalalCertificateIfNeeded() {
+    if (!halalCertificateFile) return '';
+    const formData = new FormData();
+    formData.append('file', halalCertificateFile);
     const result = await SmartBakers.api.request('/upload-image', {
       method: 'POST',
       body: formData,
@@ -445,6 +503,7 @@
       document.getElementById('step2-title').textContent = 'A little about you';
       document.getElementById('step2-sub').textContent   = 'Personalise your Smart Bakers experience';
     }
+    handleHalalStatusChange();
     goStep(2);
   }
 
@@ -453,6 +512,12 @@
       const bname = document.getElementById('bakery-name').value.trim();
       if (!bname) { document.getElementById('bakery-name-err').style.display = 'block'; return; }
       document.getElementById('bakery-name-err').style.display = 'none';
+      const isHalal = document.getElementById('baker-halal-status').value === 'Yes';
+      if (isHalal && !halalCertificateFile) {
+        document.getElementById('halal-cert-err').style.display = 'block';
+        return;
+      }
+      document.getElementById('halal-cert-err').style.display = 'none';
     }
 
     // Populate summary
@@ -506,6 +571,11 @@
     if (role === 'Baker') {
       btn.textContent = 'Uploading bakery image...';
       const imageUrl = await uploadBakerImageIfNeeded();
+      let halalCertificateUrl = '';
+      if (document.getElementById('baker-halal-status').value === 'Yes') {
+        btn.textContent = 'Uploading halal certificate...';
+        halalCertificateUrl = await uploadHalalCertificateIfNeeded();
+      }
       btn.textContent = 'Creating your account...';
       Object.assign(payload, {
         bakery_name: document.getElementById('bakery-name').value.trim(),
@@ -518,6 +588,7 @@
         instagram: document.getElementById('baker-instagram').value.trim(),
         website: document.getElementById('baker-website').value.trim(),
         image_url: imageUrl,
+        halal_certificate_url: halalCertificateUrl,
       });
     } else {
       btn.textContent = 'Creating your account...';

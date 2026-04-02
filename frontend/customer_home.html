@@ -65,11 +65,23 @@
     .coming-soon-pill{margin-left:auto;font-size:10px;background:rgba(212,147,90,.12);color:#a06030;padding:2px 7px;border-radius:20px;font-weight:700;}
 
     /* ── MUIS Halal verify strip ── */
-    .halal-strip{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 12px;margin:0 -16px -16px;background:linear-gradient(90deg,rgba(0,128,0,.07),rgba(0,128,0,.04));border-top:1px solid rgba(0,140,0,.15);}
+    .halal-strip{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 12px;margin:12px -16px -16px;background:linear-gradient(90deg,rgba(0,128,0,.07),rgba(0,128,0,.04));border-top:1px solid rgba(0,140,0,.15);}
     .halal-cert-badge{display:flex;align-items:center;gap:6px;font-size:11px;font-weight:700;color:#1a7a1a;}
     .halal-cert-badge .hicon{width:18px;height:18px;border-radius:999px;background:#1a7a1a;color:#fff;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:900;flex-shrink:0;}
+    .halal-actions{display:flex;align-items:center;gap:6px;flex-wrap:wrap;justify-content:flex-end;}
     .halal-verify-link{font-size:10px;font-weight:700;color:#1a7a1a;text-decoration:none;padding:3px 9px;border-radius:6px;border:1px solid rgba(0,140,0,.3);transition:all .2s;white-space:nowrap;}
     .halal-verify-link:hover{background:rgba(0,128,0,.1);border-color:rgba(0,140,0,.5);}
+    .cert-view-btn{font-size:10px;font-weight:700;color:#1a7a1a;background:#fff;border:1px solid rgba(0,140,0,.3);padding:3px 9px;border-radius:6px;cursor:pointer;transition:all .2s;white-space:nowrap;}
+    .cert-view-btn:hover{background:rgba(0,128,0,.08);border-color:rgba(0,140,0,.5);}
+    .cert-modal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(20,10,4,.65);backdrop-filter:blur(6px);z-index:400;padding:20px;}
+    .cert-modal.open{display:flex;}
+    .cert-dialog{width:min(760px,100%);max-height:90vh;overflow:auto;border-radius:22px;background:#fffcf7;border:1px solid rgba(212,147,90,.22);box-shadow:0 30px 80px rgba(20,10,4,.45);}
+    .cert-header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 18px;border-bottom:1px solid rgba(212,147,90,.12);}
+    .cert-title{font-family:'Playfair Display',serif;font-size:20px;font-weight:700;color:#3e2412;}
+    .cert-close{background:none;border:none;color:#8a6a4a;font-size:24px;cursor:pointer;line-height:1;}
+    .cert-body{padding:18px;}
+    .cert-frame{width:100%;min-height:420px;border:none;border-radius:14px;background:#f8f2ea;}
+    .cert-img{width:100%;height:auto;display:block;border-radius:14px;border:1px solid rgba(212,147,90,.18);}
 
     /* ── Hero ── */
     .hero{padding:60px 32px 44px;max-width:820px;margin:0 auto;text-align:center;}
@@ -110,20 +122,20 @@
 
     /* ── Baker Cards ── */
     .bakers-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(272px,1fr));gap:18px;}
-    .baker-card{border-radius:18px;overflow:hidden;cursor:pointer;transition:all .38s cubic-bezier(.34,1.4,.64,1);}
+    .baker-card{border-radius:18px;overflow:hidden;cursor:pointer;transition:all .38s cubic-bezier(.34,1.4,.64,1);display:flex;flex-direction:column;height:100%;}
     .baker-card:hover{transform:translateY(-9px);box-shadow:0 26px 52px rgba(20,10,4,.32);}
     .baker-card.ai-match{outline:2px solid rgba(212,147,90,.55);outline-offset:1px;box-shadow:0 0 0 5px rgba(212,147,90,.1);}
     .card-img{height:148px;display:flex;align-items:center;justify-content:center;font-size:60px;position:relative;overflow:hidden;background:linear-gradient(135deg,rgba(212,147,90,.1),rgba(160,96,48,.07));}
     .ai-badge{position:absolute;top:9px;left:9px;padding:3px 9px;border-radius:999px;background:rgba(212,147,90,.88);font-size:10px;font-weight:700;color:#fff;letter-spacing:.2px;}
-    .card-body{padding:16px;}
+    .card-body{padding:16px;display:flex;flex-direction:column;flex:1;}
     .card-header{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:2px;}
     .baker-name{font-family:'Playfair Display',serif;font-size:17px;font-weight:600;color:#3e2412;line-height:1.2;}
     .baker-loc{font-size:11px;color:#a08060;flex-shrink:0;padding-top:3px;}
     .baker-specialty{font-size:11px;color:#a06030;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:7px;}
-    .baker-desc{font-size:12px;color:#7a5a40;line-height:1.5;margin-bottom:10px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
-    .baker-tags{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:12px;}
+    .baker-desc{font-size:12px;color:#7a5a40;line-height:1.5;margin-bottom:10px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:36px;}
+    .baker-tags{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:12px;min-height:50px;align-content:flex-start;}
     .btag{padding:3px 8px;border-radius:6px;font-size:10px;font-weight:600;background:rgba(212,147,90,.1);color:#a06030;border:1px solid rgba(212,147,90,.18);}
-    .card-footer{display:flex;align-items:center;justify-content:space-between;}
+    .card-footer{display:flex;align-items:center;justify-content:space-between;margin-top:auto;padding-top:4px;}
     .rating-row{display:flex;align-items:center;gap:4px;}
     .stars{color:#d4935a;font-size:12px;}
     .rating-num{font-size:13px;font-weight:700;color:#5a3a20;}
@@ -289,6 +301,16 @@
 
 </div>
 
+<div class="cert-modal" id="cert-modal" onclick="closeCertModal(event)">
+  <div class="cert-dialog" onclick="event.stopPropagation()">
+    <div class="cert-header">
+      <div class="cert-title" id="cert-modal-title">Halal Certificate</div>
+      <button class="cert-close" onclick="closeCertModal()">×</button>
+    </div>
+    <div class="cert-body" id="cert-modal-body"></div>
+  </div>
+</div>
+
 <script>
 // ── Bakery data (Singapore demo) ───────────────────────────────────────────────
 const BAKERIES = [
@@ -355,6 +377,7 @@ function toUiBaker(item) {
     specialty,
     desc: item.description || 'Custom bakes available on request.',
     imageUrl: item.image_url || '',
+    halalCertificateUrl: item.halal_certificate_url || '',
     emoji: '🧁',
     tags,
     rating: 4.8,
@@ -392,6 +415,30 @@ async function loadBakeries() {
 }
 
 // ── Render ─────────────────────────────────────────────────────────────────────
+function openCertModal(name, url) {
+  if (!url) return;
+  const modal = document.getElementById('cert-modal');
+  const title = document.getElementById('cert-modal-title');
+  const body = document.getElementById('cert-modal-body');
+  title.textContent = `${name} Halal Certificate`;
+
+  if (/\.pdf(\?|$)/i.test(url)) {
+    body.innerHTML = `<iframe class="cert-frame" src="${url}" title="${name} Halal Certificate"></iframe>`;
+  } else {
+    body.innerHTML = `<img class="cert-img" src="${url}" alt="${name} Halal Certificate">`;
+  }
+
+  modal.classList.add('open');
+}
+
+function closeCertModal(event) {
+  if (event && event.target !== event.currentTarget) return;
+  const modal = document.getElementById('cert-modal');
+  const body = document.getElementById('cert-modal-body');
+  modal.classList.remove('open');
+  body.innerHTML = '';
+}
+
 function renderBakeries(list) {
   const grid = document.getElementById('bakers-grid');
   const countEl = document.getElementById('bakers-count');
@@ -447,7 +494,10 @@ function renderBakeries(list) {
             <div class="hicon">✓</div>
             MUIS Halal Certified
           </div>
-          <a class="halal-verify-link" href="${muisUrl}" target="_blank" rel="noopener" onclick="event.stopPropagation()">Verify on MUIS ↗</a>
+          <div class="halal-actions">
+            ${b.halalCertificateUrl ? `<button class="cert-view-btn" onclick="event.stopPropagation();openCertModal(${JSON.stringify(b.name)}, ${JSON.stringify(b.halalCertificateUrl)})">Show Certificate</button>` : ''}
+            <a class="halal-verify-link" href="${muisUrl}" target="_blank" rel="noopener" onclick="event.stopPropagation()">Verify on MUIS ↗</a>
+          </div>
         </div>` : ''}
       </div>`;
     grid.appendChild(card);
