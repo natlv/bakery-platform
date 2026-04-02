@@ -16,7 +16,7 @@
     .inp:focus{border-color:#c8956c;}
     .bid-card{background:rgba(255,252,247,.96);border:1px solid rgba(200,149,108,.24);border-radius:18px;padding:22px;transition:all .3s cubic-bezier(.34,1.56,.64,1);box-shadow:0 14px 34px rgba(20,10,4,.16);}
     .bid-card:hover{transform:translateY(-4px);box-shadow:0 18px 40px rgba(20,10,4,.22);border-color:rgba(200,149,108,.4);}
-    .bid-card.winner{border-color:rgba(107,143,94,.55);background:linear-gradient(180deg,rgba(255,252,247,.98),rgba(244,250,241,.96));box-shadow:0 18px 42px rgba(20,10,4,.2);}
+    .bid-card.winner{border:2px solid #6b8f5e;background:linear-gradient(180deg,#fffdf8 0%,#eef8e9 100%);box-shadow:0 20px 46px rgba(20,10,4,.22),0 0 0 4px rgba(107,143,94,.12);}
     .accept-btn{padding:11px 24px;background:linear-gradient(135deg,#c8956c,#a67c52);color:#fffaf5;border:none;border-radius:11px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:all .3s cubic-bezier(.34,1.56,.64,1);white-space:nowrap;}
     .accept-btn:hover{transform:translateY(-2px);box-shadow:0 8px 20px rgba(200,149,108,.3);}
     .decline-btn{padding:11px 18px;background:transparent;color:#a1887f;border:1px solid rgba(200,149,108,.3);border-radius:11px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:all .2s;}
@@ -161,7 +161,7 @@
             <div>
               <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
                 <p style="font-family:'Playfair Display',serif;color:#3e2723;font-size:17px;font-weight:600;margin:0;">${SmartBakers.utils.escHtml(bakerLabel(bid))}</p>
-                ${isAccepted ? '<span style="background:rgba(107,143,94,.15);color:#4a7c3f;padding:3px 8px;border-radius:6px;font-size:10px;font-weight:700;font-family:\'DM Sans\',sans-serif;border:1px solid rgba(107,143,94,.25);">Accepted</span>' : isWinner ? '<span style="background:rgba(107,143,94,.15);color:#4a7c3f;padding:3px 8px;border-radius:6px;font-size:10px;font-weight:700;font-family:\'DM Sans\',sans-serif;border:1px solid rgba(107,143,94,.25);">Best Value</span>' : ''}
+                ${isAccepted ? '<span style="background:#6b8f5e;color:#fff;padding:4px 10px;border-radius:999px;font-size:10px;font-weight:700;font-family:\'DM Sans\',sans-serif;box-shadow:0 4px 10px rgba(107,143,94,.22);">Accepted</span>' : isWinner ? '<span style="background:linear-gradient(135deg,#6b8f5e,#88a97a);color:#fff;padding:4px 10px;border-radius:999px;font-size:10px;font-weight:700;font-family:\'DM Sans\',sans-serif;box-shadow:0 4px 10px rgba(107,143,94,.22);">Best Value</span>' : ''}
               </div>
               <p style="font-family:'DM Sans',sans-serif;color:#a1887f;font-size:12px;margin:4px 0 0;">Submitted ${SmartBakers.utils.escHtml(SmartBakers.utils.timeAgo(bid.created_at))}</p>
             </div>
