@@ -242,7 +242,7 @@ def unique_image_upload(file: UploadFile):
 
 @app.get("/")
 def root():
-    return RedirectResponse(url="/login.html", status_code=307)
+    return RedirectResponse(url="/customer_home.html", status_code=307)
 
 @app.get("/health")
 def health():
