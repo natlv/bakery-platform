@@ -93,9 +93,11 @@
   let bids = [];
   let currentSort = 'bid-low';
   let sorted = [];
+  const bakerProfiles = new Map();
 
   function bakerLabel(bid) {
-    return bid.baker_id ? `Baker #${bid.baker_id}` : `Bid #${bid.bid_id}`;
+    const profile = bakerProfiles.get(Number(bid.baker_id));
+    return profile?.name || (bid.baker_id ? `Baker #${bid.baker_id}` : `Bid #${bid.bid_id}`);
   }
 
   function emojiForBid(index) {
@@ -183,12 +185,23 @@
         </div>
 
         ${bid.notes ? `
-        <div style="margin-top:14px;padding:12px 14px;background:rgba(200,149,108,.05);border-radius:10px;border-left:3px solid rgba(200,149,108,.3);">
-          <p style="font-family:'DM Sans',sans-serif;color:#5c3d2e;font-size:13px;margin:0;line-height:1.6;white-space:pre-line;">${SmartBakers.utils.escHtml(bid.notes)}</p>
+        <div style="margin-top:14px;padding:12px 14px;background:rgba(255,248,240,.7);border-radius:10px;border:1px solid rgba(200,149,108,.18);border-left:3px solid rgba(200,149,108,.45);">
+          <p style="font-family:'DM Sans',sans-serif;color:#4a2f23;font-size:13px;margin:0;line-height:1.6;white-space:pre-line;">${SmartBakers.utils.escHtml(bid.notes)}</p>
         </div>` : ''}
       `;
       container.appendChild(card);
     });
+  }
+
+  async function loadBakerProfiles() {
+    const ids = Array.from(new Set(bids.map(bid => Number(bid.baker_id)).filter(id => Number.isFinite(id) && id > 0)));
+    await Promise.all(
+      ids.map(async (id) => {
+        if (bakerProfiles.has(id)) return;
+        const profile = await SmartBakers.api.getBaker(id).catch(() => null);
+        if (profile) bakerProfiles.set(id, profile);
+      })
+    );
   }
 
   async function handleAccept(id, name) {
@@ -234,6 +247,7 @@
     }
 
     bids = await SmartBakers.api.getBids(requestId).catch(() => []);
+    await loadBakerProfiles();
     renderRequestSummary();
 
     if (requestData.status === 'accepted' && requestData.accepted_bid_id) {
