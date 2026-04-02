@@ -431,6 +431,11 @@ function openCertModal(name, url) {
   modal.classList.add('open');
 }
 
+function openCertModalFromButton(button) {
+  if (!button) return;
+  openCertModal(button.dataset.name || 'Bakery', button.dataset.url || '');
+}
+
 function closeCertModal(event) {
   if (event && event.target !== event.currentTarget) return;
   const modal = document.getElementById('cert-modal');
@@ -495,7 +500,7 @@ function renderBakeries(list) {
             MUIS Halal Certified
           </div>
           <div class="halal-actions">
-            ${b.halalCertificateUrl ? `<button class="cert-view-btn" onclick="event.stopPropagation();openCertModal(${JSON.stringify(b.name)}, ${JSON.stringify(b.halalCertificateUrl)})">Show Certificate</button>` : ''}
+            ${b.halalCertificateUrl ? `<button class="cert-view-btn" data-name="${SmartBakers.utils.escHtml(b.name)}" data-url="${SmartBakers.utils.escHtml(b.halalCertificateUrl)}" onclick="event.stopPropagation();openCertModalFromButton(this)">Show Certificate</button>` : ''}
             <a class="halal-verify-link" href="${muisUrl}" target="_blank" rel="noopener" onclick="event.stopPropagation()">Verify on MUIS ↗</a>
           </div>
         </div>` : ''}

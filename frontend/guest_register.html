@@ -160,7 +160,7 @@
       <div id="baker-fields">
         <div style="margin-bottom:16px;">
           <label style="font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;color:#3d2b1f;display:block;margin-bottom:6px;">Bakery / Display Name</label>
-          <input class="inp" type="text" id="bakery-name" placeholder="e.g. Ada's Artisan Breads">
+          <input class="inp" type="text" id="bakery-name" placeholder="e.g. Ada's Artisan Breads" oninput="clearBakeryNameError()">
           <p class="err-msg" id="bakery-name-err">Please add a display name.</p>
         </div>
         <div style="margin-bottom:16px;">
@@ -362,6 +362,12 @@
 
   function toggleChip(btn) {
     btn.classList.toggle('selected');
+  }
+
+  function clearBakeryNameError() {
+    if (document.getElementById('bakery-name').value.trim()) {
+      document.getElementById('bakery-name-err').style.display = 'none';
+    }
   }
 
   function chipLabel(btn) {
