@@ -167,6 +167,30 @@
           <label style="font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;color:#3d2b1f;display:block;margin-bottom:6px;">Location <span style="color:#a1887f;font-weight:400;">(city / neighbourhood)</span></label>
           <input class="inp" type="text" id="baker-location" placeholder="e.g. Tiong Bahru, Singapore">
         </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">
+          <div>
+            <label style="font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;color:#3d2b1f;display:block;margin-bottom:6px;">Fulfillment Method</label>
+            <select class="inp" id="baker-fulfillment">
+              <option value="Self Pick-up">Self Pick-up</option>
+              <option value="Delivery">Delivery</option>
+              <option value="Delivery / Pick-up">Delivery / Pick-up</option>
+            </select>
+          </div>
+          <div>
+            <label style="font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;color:#3d2b1f;display:block;margin-bottom:6px;">Halal Status</label>
+            <select class="inp" id="baker-halal-status">
+              <option value="No">No</option>
+              <option value="Yes">Yes</option>
+            </select>
+          </div>
+        </div>
+        <div style="margin-bottom:16px;">
+          <label style="font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;color:#3d2b1f;display:block;margin-bottom:6px;">Less Sweet Options</label>
+          <select class="inp" id="baker-less-sweet">
+            <option value="No">No</option>
+            <option value="Yes">Yes</option>
+          </select>
+        </div>
         <div style="margin-bottom:20px;">
           <label style="font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;color:#3d2b1f;display:block;margin-bottom:10px;">What do you specialise in?</label>
           <div style="display:flex;gap:8px;flex-wrap:wrap;" id="specialism-chips">
@@ -178,6 +202,16 @@
             <button class="interest-chip" onclick="toggleChip(this)">💒 Weddings</button>
             <button class="interest-chip" onclick="toggleChip(this)">🌿 Vegan</button>
             <button class="interest-chip" onclick="toggleChip(this)">🌾 Gluten-Free</button>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px;">
+          <div>
+            <label style="font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;color:#3d2b1f;display:block;margin-bottom:6px;">Instagram <span style="color:#a1887f;font-weight:400;">(optional)</span></label>
+            <input class="inp" type="text" id="baker-instagram" placeholder="@yourbakery">
+          </div>
+          <div>
+            <label style="font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;color:#3d2b1f;display:block;margin-bottom:6px;">Website <span style="color:#a1887f;font-weight:400;">(optional)</span></label>
+            <input class="inp" type="url" id="baker-website" placeholder="https://yourbakery.com">
           </div>
         </div>
         <div style="margin-bottom:20px;">
@@ -198,7 +232,7 @@
         </div>
         <div style="margin-bottom:20px;">
           <label style="font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;color:#3d2b1f;display:block;margin-bottom:10px;">What are you typically looking for?</label>
-          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <div style="display:flex;gap:8px;flex-wrap:wrap;" id="customer-interest-chips">
             <button class="interest-chip" onclick="toggleChip(this)">🎂 Birthday cakes</button>
             <button class="interest-chip" onclick="toggleChip(this)">💒 Wedding cakes</button>
             <button class="interest-chip" onclick="toggleChip(this)">🧁 Cupcakes</button>
@@ -313,6 +347,18 @@
     btn.classList.toggle('selected');
   }
 
+  function chipLabel(btn) {
+    return btn.textContent
+      .replace(/^[^A-Za-z0-9]+/, '')
+      .trim();
+  }
+
+  function selectedChipLabels(containerId) {
+    const container = document.getElementById(containerId);
+    if (!container) return [];
+    return Array.from(container.querySelectorAll('.interest-chip.selected')).map(chipLabel);
+  }
+
   // --- Step navigation ---
   function goStep(n) {
     [1,2,3].forEach(i => {
@@ -412,14 +458,41 @@
     const last  = document.getElementById('reg-last').value.trim();
     const email = document.getElementById('reg-email').value.trim();
     const pwd   = document.getElementById('reg-pwd').value;
-    const fullName = first + ' ' + last;
     const role = selectedRole;
+    const payload = {
+      email,
+      password: pwd,
+      role,
+      first_name: first,
+      last_name: last,
+      marketing_opt_in: document.getElementById('agree-marketing').checked,
+    };
+
+    if (role === 'Baker') {
+      Object.assign(payload, {
+        bakery_name: document.getElementById('bakery-name').value.trim(),
+        baker_location: document.getElementById('baker-location').value.trim(),
+        baker_bio: document.getElementById('baker-bio').value.trim(),
+        specialties: selectedChipLabels('specialism-chips'),
+        fulfillment_method: document.getElementById('baker-fulfillment').value,
+        halal_status: document.getElementById('baker-halal-status').value,
+        less_sweet: document.getElementById('baker-less-sweet').value,
+        instagram: document.getElementById('baker-instagram').value.trim(),
+        website: document.getElementById('baker-website').value.trim(),
+      });
+    } else {
+      Object.assign(payload, {
+        customer_address: document.getElementById('cust-address').value.trim(),
+        customer_phone: document.getElementById('cust-phone').value.trim(),
+        customer_interests: selectedChipLabels('customer-interest-chips'),
+      });
+    }
 
     try {
       const result = await SmartBakers.api.request('/signup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password: pwd, role, first_name: first, last_name: last }),
+        body: JSON.stringify(payload),
       });
 
       sessionStorage.setItem('sb_signup_role', role);

@@ -173,11 +173,12 @@
       });
         
       const userId = result.user_id;
+      const profileId = result.profile_id ?? result.user_id;
       const name = result.name;
       const capitalName = name.charAt(0).toUpperCase();
       const confirmedRole = result.role;
 
-      SmartBakers.session.save(userId, confirmedRole, capitalName, email);
+      SmartBakers.session.save(userId, confirmedRole, capitalName, email, profileId);
 
       // Route by role
       window.location.href = confirmedRole === 'Baker'

@@ -122,10 +122,11 @@ const SmartBakers = {
       return role === "Customer" ? 1 : 1;
     },
 
-    save(userId, role, name = "Guest", email = "") {
-      const numericId = SmartBakers.session.demoNumericIdForRole(role);
+    save(userId, role, name = "Guest", email = "", numericId = null) {
+      const resolvedNumericId =
+        numericId == null ? SmartBakers.session.demoNumericIdForRole(role) : Number(numericId);
       localStorage.setItem(SmartBakers.config.storage.userId, String(userId));
-      localStorage.setItem(SmartBakers.config.storage.userNumericId, String(numericId));
+      localStorage.setItem(SmartBakers.config.storage.userNumericId, String(resolvedNumericId));
       localStorage.setItem(SmartBakers.config.storage.role, role);
       localStorage.setItem(SmartBakers.config.storage.username, name);
       localStorage.setItem(SmartBakers.config.storage.email, email);
