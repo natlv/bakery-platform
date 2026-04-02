@@ -475,6 +475,11 @@ const SmartBakers = {
       return Array.isArray(payload) ? payload.map(SmartBakers.api.normalizeBaker) : [];
     },
 
+    async getBaker(bakerId) {
+      const payload = await SmartBakers.api.request(`/bakers/${bakerId}`);
+      return SmartBakers.api.normalizeBaker(payload);
+    },
+
     async getRequests(params = {}) {
       const search = new URLSearchParams();
       if (params.customerId) search.set("customer_id", String(params.customerId));

@@ -312,6 +312,7 @@
   let currentSort = 'newest';
   let allRequests = [];
   let filtered = [];
+  let currentBaker = null;
 
   // ── Dropdown ──────────────────────────────────────────────────────────────────
   function toggleDropdown() {
@@ -357,12 +358,24 @@
     return true;
   }
 
+  function bakerIsHalalCertified() {
+    return String(currentBaker?.halal_status || '').trim().toLowerCase() === 'yes';
+  }
+
+  function requestNeedsHalal(request) {
+    return (request.dietary || []).some(item => String(item).trim().toLowerCase() === 'halal');
+  }
+
   // ── Load from API ─────────────────────────────────────────────────────────────
   async function loadRequests() {
     const grid = document.getElementById('requests-grid');
     grid.innerHTML = `<div class="glass" style="grid-column:1/-1;text-align:center;padding:40px;border-radius:16px;font-size:14px;color:#8d6e63;">Loading marketplace…</div>`;
 
     try {
+      const user = SmartBakers.session.get();
+      currentBaker = user.numericId
+        ? await SmartBakers.api.getBaker(user.numericId).catch(() => null)
+        : null;
       const requests = await SmartBakers.api.getRequests({ status: 'open' });
       allRequests = await Promise.all(
         requests.map(async (request) => {
@@ -399,7 +412,8 @@
       const matchSearch  = r.title.toLowerCase().includes(search) || r.details.toLowerCase().includes(search);
       const matchVariety = !variety || r.variety === variety;
       const matchBudget  = budgetMatches(Number(r.budget || 0), budget);
-      return matchSearch && matchVariety && matchBudget;
+      const matchHalal   = !requestNeedsHalal(r) || bakerIsHalalCertified();
+      return matchSearch && matchVariety && matchBudget && matchHalal;
     });
 
     if (currentSort === 'newest')      filtered.sort((a,b) => new Date(b.created_at||0) - new Date(a.created_at||0) || b.request_id - a.request_id);

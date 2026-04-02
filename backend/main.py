@@ -462,6 +462,79 @@ def get_advertising_bakers():
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+
+@app.get("/bakers/{baker_id}")
+def get_baker(baker_id: int):
+    try:
+        with get_db_cursor() as cursor:
+            baker_columns = table_columns(cursor, "baker")
+            halal_certificate_sql = (
+                "b.halal_certificate_url" if "halal_certificate_url" in baker_columns else "NULL::text"
+            )
+            cursor.execute(
+                f"""
+                SELECT
+                    b.baker_id,
+                    b.name,
+                    b.description,
+                    b.image_url,
+                    {halal_certificate_sql} AS halal_certificate_url,
+                    fm.name AS fulfillment_method,
+                    hs.name AS halal_status,
+                    ls.name AS less_sweet,
+                    COALESCE(
+                        ARRAY_AGG(DISTINCT l.name) FILTER (WHERE l.name IS NOT NULL),
+                        ARRAY[]::text[]
+                    ) AS locations,
+                    COALESCE(
+                        ARRAY_AGG(DISTINCT s.name) FILTER (WHERE s.name IS NOT NULL),
+                        ARRAY[]::text[]
+                    ) AS specialties,
+                    COALESCE(
+                        ARRAY_AGG(DISTINCT c.contact_type || ':' || c.contact_value)
+                            FILTER (WHERE c.contact_value IS NOT NULL),
+                        ARRAY[]::text[]
+                    ) AS contacts,
+                    b.created_at
+                FROM baker b
+                LEFT JOIN fulfillment_method fm
+                    ON fm.fulfillment_method_id = b.fulfillment_method_id
+                LEFT JOIN halal_status hs
+                    ON hs.halal_status_id = b.halal_status_id
+                LEFT JOIN less_sweet ls
+                    ON ls.less_sweet_id = b.less_sweet_id
+                LEFT JOIN baker_location bl
+                    ON bl.baker_id = b.baker_id
+                LEFT JOIN location l
+                    ON l.location_id = bl.location_id
+                LEFT JOIN baker_specialty bs
+                    ON bs.baker_id = b.baker_id
+                LEFT JOIN specialty s
+                    ON s.specialty_id = bs.specialty_id
+                LEFT JOIN contact c
+                    ON c.baker_id = b.baker_id
+                WHERE b.baker_id = %s
+                GROUP BY
+                    b.baker_id,
+                    b.name,
+                    b.description,
+                    b.image_url,
+                    fm.name,
+                    hs.name,
+                    ls.name,
+                    b.created_at
+                """,
+                (baker_id,),
+            )
+            row = cursor.fetchone()
+        if not row:
+            raise HTTPException(status_code=404, detail="Baker not found")
+        return serialize_baker_row(row)
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.post("/bids")
 def submit_bid(
     request_id: int = Form(...),
