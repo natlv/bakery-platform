@@ -331,6 +331,11 @@ function inferEmoji(baker) {
   return '🧁';
 }
 
+function hasHalalStatus(status) {
+  const normalized = String(status || '').trim().toLowerCase();
+  return normalized === 'yes';
+}
+
 function toUiBaker(item) {
   const location = item.locations[0] || 'Singapore';
   const tags = [
@@ -409,7 +414,7 @@ function renderBakeries(list) {
     const isAiTop = aiResults && b.aiScore > 0;
     const rank = isAiTop ? list.indexOf(b) + 1 : null;
 
-    const isHalal = b.cats.includes('halal');
+    const isHalal = hasHalalStatus(b.halalStatus);
     const muisUrl = `https://halal.muis.gov.sg/halal/establishments?name=${encodeURIComponent(b.name)}`;
     const mediaHtml = b.imageUrl
       ? `<img src="${b.imageUrl}" alt="${b.name}" style="width:100%;height:100%;object-fit:cover;">`
