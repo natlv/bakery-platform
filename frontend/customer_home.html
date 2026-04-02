@@ -362,7 +362,7 @@ function toUiBaker(item) {
   const location = item.locations[0] || 'Singapore';
   const tags = [
     ...item.specialties,
-    item.halal_status && item.halal_status !== 'No' ? item.halal_status : '',
+    item.halal_status === 'Yes' ? 'Halal' : '',
     item.less_sweet && item.less_sweet !== 'No' ? `Less sweet: ${item.less_sweet}` : '',
     item.fulfillment_method || '',
   ].filter(Boolean).slice(0, 6);
