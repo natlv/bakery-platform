@@ -295,7 +295,7 @@
         <div class="cta-title">Have something specific in mind?</div>
         <div class="cta-sub">Post a custom request and let bakers come to you with their best offers.<br>No fuss — just the perfect bake, delivered.</div>
       </div>
-      <button class="cta-btn" onclick="window.location.href='posting_baking_request.html'">Post a Request →</button>
+      <button class="cta-btn" onclick="if(SmartBakers.auth.requireLogin())window.location.href='posting_baking_request.html'">Post a Request →</button>
     </div>
   </div>
 
@@ -491,7 +491,7 @@ function renderBakeries(list) {
             <span class="rating-num">${b.rating.toFixed(1)}</span>
             <span class="review-count">(${b.reviews})</span>
           </div>
-          <button class="req-btn" onclick="event.stopPropagation();window.location.href='posting_baking_request.html'">Request →</button>
+          <button class="req-btn" onclick="event.stopPropagation();if(SmartBakers.auth.requireLogin())window.location.href='posting_baking_request.html'">Request →</button>
         </div>
         ${isHalal ? `
         <div class="halal-strip">
@@ -524,11 +524,13 @@ function applyAll() {
 
 // ── AI Search ──────────────────────────────────────────────────────────────────
 function quickSearch(text) {
+  if (!SmartBakers.auth.requireLogin()) return;
   document.getElementById('ai-search-inp').value = text;
   runAiSearch();
 }
 
 async function runAiSearch() {
+  if (!SmartBakers.auth.requireLogin()) return;
   const query = document.getElementById('ai-search-inp').value.trim();
   if (!query) return;
 
