@@ -11,12 +11,12 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from urllib.parse import urlparse, unquote
 import uuid
 from bucket_utils import Bucket
-from db import get_db_cursor
+from infrastructure.db import get_db_cursor
 from pydantic import BaseModel
 import sys
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from matching import match_bakers
-from log_setup import backend_logger as logger
+from semantic_matching.service import embed_baker_with_cursor, match_bakers
+from infrastructure.logging import backend_logger as logger
 
 load_dotenv()
 
@@ -702,6 +702,7 @@ async def signup(user: UserSignup):
                 if not user.bakery_name:
                     raise HTTPException(status_code=400, detail="Bakery name is required for baker accounts")
                 profile_id = insert_baker_profile(cursor, user)
+                embed_baker_with_cursor(cursor, profile_id)
             elif user.role == "Customer":
                 profile_id = insert_customer_profile(cursor, user_id, user) or user_id
 

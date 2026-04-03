@@ -1,17 +1,19 @@
 import os
 from contextlib import contextmanager
-from psycopg2.pool import SimpleConnectionPool
+
 from dotenv import load_dotenv
+from psycopg2.pool import SimpleConnectionPool
 
 load_dotenv()
 
+MIN_CONNECTIONS = 1
+MAX_CONNECTIONS = 100
+
 
 def _create_pool():
-    min_conn = 1
-    max_conn = 100
     return SimpleConnectionPool(
-        minconn=min_conn,
-        maxconn=max_conn,
+        minconn=MIN_CONNECTIONS,
+        maxconn=MAX_CONNECTIONS,
         host=os.getenv("DB_HOST"),
         port=os.getenv("DB_PORT"),
         database=os.getenv("DB_NAME"),
@@ -25,10 +27,6 @@ connection_pool = _create_pool()
 
 @contextmanager
 def get_db_cursor(commit: bool = False):
-    """
-    Yields a cursor backed by a pooled connection.
-    Commits automatically when commit=True, otherwise leaves transaction untouched.
-    """
     conn = None
     cursor = None
     try:
@@ -38,11 +36,11 @@ def get_db_cursor(commit: bool = False):
         if commit:
             conn.commit()
     except Exception:
-        if conn:
+        if conn is not None:
             conn.rollback()
         raise
     finally:
-        if cursor:
+        if cursor is not None:
             cursor.close()
-        if conn:
+        if conn is not None:
             connection_pool.putconn(conn)

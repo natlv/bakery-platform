@@ -148,6 +148,73 @@ def rerank_with_sealion(request_text: str, candidates: list):
     return json.loads(result['choices'][0]['message']['content'])
 
 
+def build_baker_embedding_text(
+    name: str,
+    description: str,
+    halal: str,
+    less_sweet: str,
+    fulfillment: str,
+    specialties: str,
+    locations: str,
+):
+    return f"""
+        Baker: {name}. Description: {description or 'N/A'}.
+        Specialties: {specialties or 'N/A'}. Halal: {halal or 'N/A'}.
+        Less sweet: {less_sweet or 'N/A'}.
+        Fulfillment: {fulfillment or 'N/A'}.
+        Location: {locations or 'N/A'}.
+    """.strip()
+
+
+def encode_baker_embedding(text: str) -> str:
+    return "[" + ",".join(str(x) for x in get_embed_model().encode(text).tolist()) + "]"
+
+
+def embed_baker_with_cursor(cursor, baker_id: int):
+    cursor.execute(
+        """
+        SELECT
+            b.name,
+            b.description,
+            hs.name,
+            ls.name,
+            fm.name,
+            STRING_AGG(DISTINCT s.name, ', '),
+            STRING_AGG(DISTINCT l.name, ', ')
+        FROM baker b
+        LEFT JOIN halal_status hs
+            ON b.halal_status_id = hs.halal_status_id
+        LEFT JOIN less_sweet ls
+            ON b.less_sweet_id = ls.less_sweet_id
+        LEFT JOIN fulfillment_method fm
+            ON b.fulfillment_method_id = fm.fulfillment_method_id
+        LEFT JOIN baker_specialty bs
+            ON b.baker_id = bs.baker_id
+        LEFT JOIN specialty s
+            ON bs.specialty_id = s.specialty_id
+        LEFT JOIN baker_location bl
+            ON b.baker_id = bl.baker_id
+        LEFT JOIN location l
+            ON bl.location_id = l.location_id
+        WHERE b.baker_id = %s
+        GROUP BY b.name, b.description, hs.name, ls.name, fm.name
+        """,
+        (baker_id,),
+    )
+
+    row = cursor.fetchone()
+    if not row:
+        raise ValueError(f"Baker {baker_id} not found for embedding")
+
+    embedding_text = build_baker_embedding_text(*row)
+    embedding = encode_baker_embedding(embedding_text)
+
+    cursor.execute(
+        "UPDATE baker SET embedding = %s::vector WHERE baker_id = %s",
+        (embedding, baker_id),
+    )
+
+
 def embed_new_baker(baker_id: int):
     # Call this from your registration endpoint
     # whenever a new baker signs up
@@ -183,18 +250,13 @@ def embed_new_baker(baker_id: int):
     row = cursor.fetchone()
     name, description, halal, less_sweet, fulfillment, specialties, locations = row
 
-    text = f"""
-        Baker: {name}. Description: {description or 'N/A'}.
-        Specialties: {specialties or 'N/A'}. Halal: {halal or 'N/A'}.
-        Less sweet: {less_sweet or 'N/A'}.
-        Fulfillment: {fulfillment or 'N/A'}.
-        Location: {locations or 'N/A'}.
-    """.strip()
-
-    embedding = embed_model.encode(text).tolist()
+    text = build_baker_embedding_text(
+        name, description, halal, less_sweet, fulfillment, specialties, locations
+    )
+    embedding = encode_baker_embedding(text)
 
     cursor.execute(
-        "UPDATE baker SET embedding = %s WHERE baker_id = %s",
+        "UPDATE baker SET embedding = %s::vector WHERE baker_id = %s",
         [embedding, baker_id]
     )
     conn.commit()
