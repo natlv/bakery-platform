@@ -610,7 +610,14 @@ def get_baker(baker_id: int):
 
 
 @app.get("/bakers")
-def get_bakers():
+def get_bakers(
+    page: int = 1,
+    page_size: int = 12,
+    shuffle_seed: Optional[str] = None,
+):
+    page = max(1, page)
+    page_size = max(1, min(page_size, 48))
+    offset = (page - 1) * page_size
     try:
         with get_db_cursor() as cursor:
             baker_columns = table_columns(cursor, "baker")
@@ -620,6 +627,11 @@ def get_bakers():
             is_advertising_sql = (
                 "COALESCE(b.is_advertising, FALSE)" if "is_advertising" in baker_columns else "FALSE"
             )
+            random_order_sql = (
+                "md5(%s || ':' || b.baker_id::text)" if shuffle_seed else "b.created_at::text"
+            )
+            cursor.execute("SELECT COUNT(*) FROM baker")
+            total = cursor.fetchone()[0]
             cursor.execute(
                 f"""
                 SELECT
@@ -673,11 +685,25 @@ def get_bakers():
                     ls.name,
                     b.created_at,
                     {is_advertising_sql}
-                ORDER BY {is_advertising_sql} DESC, b.created_at DESC, b.baker_id DESC
+                ORDER BY
+                    {is_advertising_sql} DESC,
+                    CASE WHEN {is_advertising_sql} THEN {random_order_sql} ELSE NULL END ASC,
+                    CASE WHEN NOT {is_advertising_sql} THEN b.created_at END DESC,
+                    b.baker_id DESC
+                LIMIT %s
+                OFFSET %s
                 """
+                ,
+                ((shuffle_seed,) if shuffle_seed else tuple()) + (page_size, offset),
             )
             rows = cursor.fetchall()
-        return [serialize_baker_row(row) for row in rows]
+        return {
+            "items": [serialize_baker_row(row) for row in rows],
+            "page": page,
+            "page_size": page_size,
+            "total": total,
+            "total_pages": max(1, (total + page_size - 1) // page_size),
+        }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

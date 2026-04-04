@@ -518,9 +518,29 @@ const SmartBakers = {
       };
     },
 
-    async getBakers() {
-      const payload = await SmartBakers.api.request("/bakers");
-      return Array.isArray(payload) ? payload.map(SmartBakers.api.normalizeBaker) : [];
+    async getBakers(params = {}) {
+      const search = new URLSearchParams();
+      if (params.page) search.set("page", String(params.page));
+      if (params.pageSize) search.set("page_size", String(params.pageSize));
+      if (params.shuffleSeed) search.set("shuffle_seed", String(params.shuffleSeed));
+      const suffix = search.toString() ? `?${search.toString()}` : "";
+      const payload = await SmartBakers.api.request(`/bakers${suffix}`);
+      if (Array.isArray(payload)) {
+        return {
+          items: payload.map(SmartBakers.api.normalizeBaker),
+          total: payload.length,
+          page: 1,
+          page_size: payload.length,
+          total_pages: 1,
+        };
+      }
+      return {
+        items: Array.isArray(payload?.items) ? payload.items.map(SmartBakers.api.normalizeBaker) : [],
+        total: Number(payload?.total || 0),
+        page: Number(payload?.page || 1),
+        page_size: Number(payload?.page_size || 0),
+        total_pages: Number(payload?.total_pages || 1),
+      };
     },
 
     async getBaker(bakerId) {

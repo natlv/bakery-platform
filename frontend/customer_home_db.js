@@ -1,5 +1,10 @@
 (() => {
   let listingModalBuilt = false;
+  let bakerPage = 1;
+  let bakerPageSize = 12;
+  let bakerTotalPages = 1;
+  let bakerTotal = 0;
+  const bakerShuffleSeed = Math.random().toString(36).slice(2);
 
   function ensureListingModal() {
     if (listingModalBuilt) return;
@@ -49,10 +54,57 @@
     return [...list].sort((a, b) => {
       const aiDiff = aiResults ? (b.aiScore || 0) - (a.aiScore || 0) : 0;
       if (aiDiff !== 0) return aiDiff;
-      const adDiff = Number(Boolean(b.isAdvertising)) - Number(Boolean(a.isAdvertising));
-      if (adDiff !== 0) return adDiff;
-      return String(a.name || "").localeCompare(String(b.name || ""));
+      return 0;
     });
+  }
+
+  function ensurePaginationBar() {
+    if (document.getElementById("bakers-pagination")) return;
+    const section = document.querySelector(".section");
+    const grid = document.getElementById("bakers-grid");
+    if (!section || !grid) return;
+    const bar = document.createElement("div");
+    bar.id = "bakers-pagination";
+    bar.style.cssText = "display:none;align-items:center;justify-content:center;gap:12px;margin-top:24px;";
+    bar.innerHTML = `
+      <button id="bakers-prev-btn" class="fchip" type="button">Previous</button>
+      <div id="bakers-page-label" style="font-family:'DM Sans',sans-serif;font-size:12px;color:rgba(255,248,240,.58);min-width:120px;text-align:center;"></div>
+      <button id="bakers-next-btn" class="fchip" type="button">Next</button>
+    `;
+    section.appendChild(bar);
+    document.getElementById("bakers-prev-btn").addEventListener("click", () => {
+      if (bakerPage > 1) {
+        bakerPage -= 1;
+        window.loadBakeries();
+      }
+    });
+    document.getElementById("bakers-next-btn").addEventListener("click", () => {
+      if (bakerPage < bakerTotalPages) {
+        bakerPage += 1;
+        window.loadBakeries();
+      }
+    });
+  }
+
+  function renderPaginationBar() {
+    ensurePaginationBar();
+    const bar = document.getElementById("bakers-pagination");
+    const label = document.getElementById("bakers-page-label");
+    const prev = document.getElementById("bakers-prev-btn");
+    const next = document.getElementById("bakers-next-btn");
+    if (!bar || !label || !prev || !next) return;
+    if (bakerTotalPages <= 1) {
+      bar.style.display = "none";
+      return;
+    }
+    bar.style.display = "flex";
+    label.textContent = `Page ${bakerPage} of ${bakerTotalPages}`;
+    prev.disabled = bakerPage <= 1;
+    next.disabled = bakerPage >= bakerTotalPages;
+    prev.style.opacity = prev.disabled ? ".45" : "1";
+    next.style.opacity = next.disabled ? ".45" : "1";
+    prev.style.cursor = prev.disabled ? "not-allowed" : "pointer";
+    next.style.cursor = next.disabled ? "not-allowed" : "pointer";
   }
 
   window.closeListingModal = function closeListingModal() {
@@ -155,12 +207,19 @@
     grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:60px 20px;font-family:'DM Sans',sans-serif;color:rgba(255,248,240,.5);font-size:15px;">Loading bakeries from the database...</div>`;
     countEl.textContent = "";
     try {
-      const rows = await SmartBakers.api.getBakers();
-      const nextBakers = rows.map(window.toUiBaker);
-      BAKERIES.splice(0, BAKERIES.length, ...sortBakers(nextBakers));
+      const payload = await SmartBakers.api.getBakers({
+        page: bakerPage,
+        pageSize: bakerPageSize,
+        shuffleSeed: bakerShuffleSeed,
+      });
+      bakerTotal = payload.total || 0;
+      bakerTotalPages = payload.total_pages || 1;
+      const nextBakers = payload.items.map(window.toUiBaker);
+      BAKERIES.splice(0, BAKERIES.length, ...nextBakers);
       const title = document.querySelector(".sec-title");
       if (title) title.textContent = "All bakeries";
       window.applyAll();
+      renderPaginationBar();
     } catch (error) {
       grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:60px 20px;font-family:'DM Sans',sans-serif;color:#f1c6a0;font-size:15px;">Could not load bakeries from the database right now.</div>`;
       SmartBakers.ui.toast("Could not load bakeries from the database.", "error");
@@ -179,7 +238,7 @@
       return;
     }
 
-    countEl.textContent = `${list.length} baker${list.length !== 1 ? "ies" : "y"} found`;
+    countEl.textContent = `${bakerTotal} baker${bakerTotal !== 1 ? "ies" : "y"} found`;
 
     list.forEach((b, i) => {
       const card = document.createElement("div");
@@ -241,6 +300,7 @@
 
   document.addEventListener("DOMContentLoaded", () => {
     ensureListingModal();
+    ensurePaginationBar();
     const title = document.querySelector(".sec-title");
     if (title) title.textContent = "All bakeries";
   });
