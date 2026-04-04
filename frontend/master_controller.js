@@ -523,6 +523,7 @@ const SmartBakers = {
       if (params.page) search.set("page", String(params.page));
       if (params.pageSize) search.set("page_size", String(params.pageSize));
       if (params.shuffleSeed) search.set("shuffle_seed", String(params.shuffleSeed));
+      if (params.category && params.category !== "all") search.set("category", String(params.category));
       const suffix = search.toString() ? `?${search.toString()}` : "";
       const payload = await SmartBakers.api.request(`/bakers${suffix}`);
       if (Array.isArray(payload)) {

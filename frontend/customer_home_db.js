@@ -211,6 +211,7 @@
         page: bakerPage,
         pageSize: bakerPageSize,
         shuffleSeed: bakerShuffleSeed,
+        category: currentCat,
       });
       bakerTotal = payload.total || 0;
       bakerTotalPages = payload.total_pages || 1;
@@ -293,9 +294,16 @@
   };
 
   window.applyAll = function applyAll() {
-    let list = BAKERIES.filter((b) => currentCat === "all" || b.cats.includes(currentCat));
-    list = sortBakers(list);
+    let list = sortBakers(BAKERIES);
     window.renderBakeries(list);
+  };
+
+  window.filterCat = function filterCat(cat, el) {
+    currentCat = cat;
+    bakerPage = 1;
+    document.querySelectorAll(".fchip").forEach((chip) => chip.classList.remove("active"));
+    if (el) el.classList.add("active");
+    window.loadBakeries();
   };
 
   document.addEventListener("DOMContentLoaded", () => {

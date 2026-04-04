@@ -614,10 +614,94 @@ def get_bakers(
     page: int = 1,
     page_size: int = 12,
     shuffle_seed: Optional[str] = None,
+    category: Optional[str] = None,
 ):
     page = max(1, page)
     page_size = max(1, min(page_size, 48))
     offset = (page - 1) * page_size
+    normalized_category = (category or "").strip().lower()
+    category_predicates = {
+        "cakes": """
+            (
+                EXISTS (
+                    SELECT 1
+                    FROM baker_specialty bs2
+                    JOIN specialty s2 ON s2.specialty_id = bs2.specialty_id
+                    WHERE bs2.baker_id = b.baker_id
+                      AND LOWER(s2.name) ~ '(cake|cakes|cupcake|cupcakes|birthday|wedding|tier)'
+                )
+                OR LOWER(COALESCE(b.description, '')) ~ '(cake|cakes|cupcake|cupcakes|birthday|wedding|tier)'
+                OR LOWER(COALESCE(b.name, '')) ~ '(cake|cakes|cupcake|cupcakes|birthday|wedding|tier)'
+            )
+        """,
+        "bread": """
+            (
+                EXISTS (
+                    SELECT 1
+                    FROM baker_specialty bs2
+                    JOIN specialty s2 ON s2.specialty_id = bs2.specialty_id
+                    WHERE bs2.baker_id = b.baker_id
+                      AND LOWER(s2.name) ~ '(bread|sourdough|loaf|focaccia|brioche)'
+                )
+                OR LOWER(COALESCE(b.description, '')) ~ '(bread|sourdough|loaf|focaccia|brioche)'
+                OR LOWER(COALESCE(b.name, '')) ~ '(bread|sourdough|loaf|focaccia|brioche)'
+            )
+        """,
+        "pastry": """
+            (
+                EXISTS (
+                    SELECT 1
+                    FROM baker_specialty bs2
+                    JOIN specialty s2 ON s2.specialty_id = bs2.specialty_id
+                    WHERE bs2.baker_id = b.baker_id
+                      AND LOWER(s2.name) ~ '(pastry|croissant|danish|tart|puff|entremet)'
+                )
+                OR LOWER(COALESCE(b.description, '')) ~ '(pastry|croissant|danish|tart|puff|entremet)'
+                OR LOWER(COALESCE(b.name, '')) ~ '(pastry|croissant|danish|tart|puff|entremet)'
+            )
+        """,
+        "cookies": """
+            (
+                EXISTS (
+                    SELECT 1
+                    FROM baker_specialty bs2
+                    JOIN specialty s2 ON s2.specialty_id = bs2.specialty_id
+                    WHERE bs2.baker_id = b.baker_id
+                      AND LOWER(s2.name) ~ '(cookie|cookies|biscuit|biscuits|shortbread|brownie|brownies)'
+                )
+                OR LOWER(COALESCE(b.description, '')) ~ '(cookie|cookies|biscuit|biscuits|shortbread|brownie|brownies)'
+                OR LOWER(COALESCE(b.name, '')) ~ '(cookie|cookies|biscuit|biscuits|shortbread|brownie|brownies)'
+            )
+        """,
+        "halal": """
+            (
+                LOWER(COALESCE(hs.name, '')) = 'yes'
+                OR EXISTS (
+                    SELECT 1
+                    FROM baker_specialty bs2
+                    JOIN specialty s2 ON s2.specialty_id = bs2.specialty_id
+                    WHERE bs2.baker_id = b.baker_id
+                      AND LOWER(s2.name) ~ '(halal|muslim)'
+                )
+                OR LOWER(COALESCE(b.description, '')) ~ '(halal|muslim)'
+            )
+        """,
+        "vegan": """
+            (
+                EXISTS (
+                    SELECT 1
+                    FROM baker_specialty bs2
+                    JOIN specialty s2 ON s2.specialty_id = bs2.specialty_id
+                    WHERE bs2.baker_id = b.baker_id
+                      AND LOWER(s2.name) ~ '(vegan|plant-based|plant based|dairy-free|dairy free|egg-free|egg free)'
+                )
+                OR LOWER(COALESCE(b.description, '')) ~ '(vegan|plant-based|plant based|dairy-free|dairy free|egg-free|egg free)'
+            )
+        """,
+    }
+    if normalized_category and normalized_category not in category_predicates:
+        raise HTTPException(status_code=400, detail="Invalid baker category filter")
+    where_sql = category_predicates.get(normalized_category, "TRUE")
     try:
         with get_db_cursor() as cursor:
             baker_columns = table_columns(cursor, "baker")
@@ -630,7 +714,15 @@ def get_bakers(
             random_order_sql = (
                 "md5(%s || ':' || b.baker_id::text)" if shuffle_seed else "b.created_at::text"
             )
-            cursor.execute("SELECT COUNT(*) FROM baker")
+            cursor.execute(
+                f"""
+                SELECT COUNT(*)
+                FROM baker b
+                LEFT JOIN halal_status hs
+                    ON hs.halal_status_id = b.halal_status_id
+                WHERE {where_sql}
+                """
+            )
             total = cursor.fetchone()[0]
             cursor.execute(
                 f"""
@@ -675,6 +767,7 @@ def get_bakers(
                     ON s.specialty_id = bs.specialty_id
                 LEFT JOIN contact c
                     ON c.baker_id = b.baker_id
+                WHERE {where_sql}
                 GROUP BY
                     b.baker_id,
                     b.name,
