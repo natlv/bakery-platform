@@ -459,6 +459,7 @@ const SmartBakers = {
           specialties: Array.isArray(item[9]) ? item[9] : [],
           contacts: Array.isArray(item[10]) ? item[10] : [],
           created_at: item[11] || "",
+          is_advertising: Boolean(item[12]),
         };
       }
 
@@ -475,17 +476,91 @@ const SmartBakers = {
         specialties: Array.isArray(item?.specialties) ? item.specialties : [],
         contacts: Array.isArray(item?.contacts) ? item.contacts : [],
         created_at: item?.created_at || "",
+        is_advertising: Boolean(item?.is_advertising),
+      };
+    },
+
+    normalizeMenuItem(item) {
+      if (Array.isArray(item)) {
+        return {
+          item_id: Number(item[0]),
+          baker_id: Number(item[1]),
+          name: item[2] || "",
+          category: item[3] || "",
+          description: item[4] || "",
+          price: item[5] == null ? null : Number(item[5]),
+          lead_time: item[6] || "",
+          serves: item[7] || "",
+          dietary: Array.isArray(item[8]) ? item[8] : [],
+          custom_orders: Boolean(item[9]),
+          status: item[10] || "draft",
+          image_url: item[11] || "",
+          created_at: item[12] || "",
+          updated_at: item[13] || "",
+        };
+      }
+
+      return {
+        item_id: Number(item?.item_id),
+        baker_id: Number(item?.baker_id),
+        name: item?.name || "",
+        category: item?.category || "",
+        description: item?.description || "",
+        price: item?.price == null ? null : Number(item.price),
+        lead_time: item?.lead_time || "",
+        serves: item?.serves || "",
+        dietary: Array.isArray(item?.dietary) ? item.dietary : [],
+        custom_orders: Boolean(item?.custom_orders),
+        status: item?.status || "draft",
+        image_url: item?.image_url || "",
+        created_at: item?.created_at || "",
+        updated_at: item?.updated_at || "",
       };
     },
 
     async getBakers() {
-      const payload = await SmartBakers.api.request("/advertising-bakers");
+      const payload = await SmartBakers.api.request("/bakers");
       return Array.isArray(payload) ? payload.map(SmartBakers.api.normalizeBaker) : [];
     },
 
     async getBaker(bakerId) {
       const payload = await SmartBakers.api.request(`/bakers/${bakerId}`);
       return SmartBakers.api.normalizeBaker(payload);
+    },
+
+    async getMenuItems(bakerId, params = {}) {
+      const search = new URLSearchParams();
+      if (params.status) search.set("status", params.status);
+      const suffix = search.toString() ? `?${search.toString()}` : "";
+      const payload = await SmartBakers.api.request(`/bakers/${bakerId}/menu-items${suffix}`);
+      return Array.isArray(payload) ? payload.map(SmartBakers.api.normalizeMenuItem) : [];
+    },
+
+    async createMenuItem(payload) {
+      return SmartBakers.api.normalizeMenuItem(
+        await SmartBakers.api.request("/menu-items", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        })
+      );
+    },
+
+    async updateMenuItem(itemId, payload) {
+      return SmartBakers.api.normalizeMenuItem(
+        await SmartBakers.api.request(`/menu-items/${itemId}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        })
+      );
+    },
+
+    async deleteMenuItem(itemId, bakerId) {
+      const search = new URLSearchParams({ baker_id: String(bakerId) });
+      return SmartBakers.api.request(`/menu-items/${itemId}?${search.toString()}`, {
+        method: "DELETE",
+      });
     },
 
     async getRequests(params = {}) {

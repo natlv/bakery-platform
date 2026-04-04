@@ -6,13 +6,12 @@ from fastapi.responses import RedirectResponse
 from dotenv import load_dotenv
 import shutil
 import os
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from werkzeug.security import generate_password_hash, check_password_hash
 from urllib.parse import urlparse, unquote
 import uuid
 from bucket_utils import Bucket
 from infrastructure.db import get_db_cursor
-from pydantic import BaseModel
 import sys
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from semantic_matching.service import embed_baker_with_cursor, match_bakers
@@ -84,6 +83,26 @@ def serialize_baker_row(row):
         "specialties": row[9] or [],
         "contacts": row[10] or [],
         "created_at": row[11].isoformat() if hasattr(row[11], "isoformat") else row[11],
+        "is_advertising": bool(row[12]) if len(row) > 12 else False,
+    }
+
+
+def serialize_menu_item_row(row):
+    return {
+        "item_id": row[0],
+        "baker_id": row[1],
+        "name": row[2] or "",
+        "category": row[3] or "",
+        "description": row[4] or "",
+        "price": float(row[5]) if row[5] is not None else None,
+        "lead_time": row[6] or "",
+        "serves": row[7] or "",
+        "dietary": row[8] or [],
+        "custom_orders": bool(row[9]),
+        "status": row[10] or "draft",
+        "image_url": bucket.find_image(row[11]) if row[11] else None,
+        "created_at": row[12].isoformat() if hasattr(row[12], "isoformat") else row[12],
+        "updated_at": row[13].isoformat() if hasattr(row[13], "isoformat") else row[13],
     }
 
 
@@ -107,6 +126,48 @@ def table_columns(cursor, table_name: str):
         (table_name,),
     )
     return {row[0] for row in cursor.fetchall()}
+
+
+def ensure_menu_item_table(cursor):
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS menu_item (
+            item_id BIGSERIAL PRIMARY KEY,
+            baker_id BIGINT NOT NULL REFERENCES baker(baker_id) ON DELETE CASCADE,
+            name TEXT NOT NULL,
+            category TEXT NOT NULL,
+            description TEXT,
+            price NUMERIC(10, 2) NOT NULL CHECK (price > 0),
+            lead_time TEXT,
+            serves TEXT,
+            dietary TEXT[] NOT NULL DEFAULT ARRAY[]::text[],
+            custom_orders BOOLEAN NOT NULL DEFAULT FALSE,
+            status TEXT NOT NULL DEFAULT 'draft' CHECK (status IN ('live', 'draft')),
+            image_url TEXT,
+            created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+            updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+        )
+        """
+    )
+
+
+def menu_item_columns(cursor):
+    ensure_menu_item_table(cursor)
+    return table_columns(cursor, "menu_item")
+
+
+class MenuItemPayload(BaseModel):
+    baker_id: int
+    name: str
+    category: str
+    description: str = ""
+    price: float
+    lead_time: str = ""
+    serves: str = ""
+    dietary: List[str] = Field(default_factory=list)
+    custom_orders: bool = False
+    status: str = "draft"
+    image_url: str = ""
 
 
 def insert_customer_profile(cursor, user_id: int, user):
@@ -403,6 +464,10 @@ def get_advertising_bakers():
             halal_certificate_sql = (
                 "b.halal_certificate_url" if "halal_certificate_url" in baker_columns else "NULL::text"
             )
+            is_advertising_sql = (
+                "COALESCE(b.is_advertising, FALSE)" if "is_advertising" in baker_columns else "FALSE"
+            )
+            advertising_where_sql = "b.is_advertising = TRUE" if "is_advertising" in baker_columns else "TRUE"
             cursor.execute(
                 f"""
                 SELECT
@@ -427,7 +492,8 @@ def get_advertising_bakers():
                             FILTER (WHERE c.contact_value IS NOT NULL),
                         ARRAY[]::text[]
                     ) AS contacts,
-                    b.created_at
+                    b.created_at,
+                    {is_advertising_sql} AS is_advertising
                 FROM baker b
                 LEFT JOIN fulfillment_method fm
                     ON fm.fulfillment_method_id = b.fulfillment_method_id
@@ -445,7 +511,7 @@ def get_advertising_bakers():
                     ON s.specialty_id = bs.specialty_id
                 LEFT JOIN contact c
                     ON c.baker_id = b.baker_id
-                WHERE b.is_advertising = TRUE
+                WHERE {advertising_where_sql}
                 GROUP BY
                     b.baker_id,
                     b.name,
@@ -454,7 +520,8 @@ def get_advertising_bakers():
                     fm.name,
                     hs.name,
                     ls.name,
-                    b.created_at
+                    b.created_at,
+                    {is_advertising_sql}
                 ORDER BY b.created_at DESC, b.baker_id DESC
                 """
             )
@@ -471,6 +538,9 @@ def get_baker(baker_id: int):
             baker_columns = table_columns(cursor, "baker")
             halal_certificate_sql = (
                 "b.halal_certificate_url" if "halal_certificate_url" in baker_columns else "NULL::text"
+            )
+            is_advertising_sql = (
+                "COALESCE(b.is_advertising, FALSE)" if "is_advertising" in baker_columns else "FALSE"
             )
             cursor.execute(
                 f"""
@@ -496,7 +566,8 @@ def get_baker(baker_id: int):
                             FILTER (WHERE c.contact_value IS NOT NULL),
                         ARRAY[]::text[]
                     ) AS contacts,
-                    b.created_at
+                    b.created_at,
+                    {is_advertising_sql} AS is_advertising
                 FROM baker b
                 LEFT JOIN fulfillment_method fm
                     ON fm.fulfillment_method_id = b.fulfillment_method_id
@@ -523,7 +594,8 @@ def get_baker(baker_id: int):
                     fm.name,
                     hs.name,
                     ls.name,
-                    b.created_at
+                    b.created_at,
+                    {is_advertising_sql}
                 """,
                 (baker_id,),
             )
@@ -531,6 +603,291 @@ def get_baker(baker_id: int):
         if not row:
             raise HTTPException(status_code=404, detail="Baker not found")
         return serialize_baker_row(row)
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/bakers")
+def get_bakers():
+    try:
+        with get_db_cursor() as cursor:
+            baker_columns = table_columns(cursor, "baker")
+            halal_certificate_sql = (
+                "b.halal_certificate_url" if "halal_certificate_url" in baker_columns else "NULL::text"
+            )
+            is_advertising_sql = (
+                "COALESCE(b.is_advertising, FALSE)" if "is_advertising" in baker_columns else "FALSE"
+            )
+            cursor.execute(
+                f"""
+                SELECT
+                    b.baker_id,
+                    b.name,
+                    b.description,
+                    b.image_url,
+                    {halal_certificate_sql} AS halal_certificate_url,
+                    fm.name AS fulfillment_method,
+                    hs.name AS halal_status,
+                    ls.name AS less_sweet,
+                    COALESCE(
+                        ARRAY_AGG(DISTINCT l.name) FILTER (WHERE l.name IS NOT NULL),
+                        ARRAY[]::text[]
+                    ) AS locations,
+                    COALESCE(
+                        ARRAY_AGG(DISTINCT s.name) FILTER (WHERE s.name IS NOT NULL),
+                        ARRAY[]::text[]
+                    ) AS specialties,
+                    COALESCE(
+                        ARRAY_AGG(DISTINCT c.contact_type || ':' || c.contact_value)
+                            FILTER (WHERE c.contact_value IS NOT NULL),
+                        ARRAY[]::text[]
+                    ) AS contacts,
+                    b.created_at,
+                    {is_advertising_sql} AS is_advertising
+                FROM baker b
+                LEFT JOIN fulfillment_method fm
+                    ON fm.fulfillment_method_id = b.fulfillment_method_id
+                LEFT JOIN halal_status hs
+                    ON hs.halal_status_id = b.halal_status_id
+                LEFT JOIN less_sweet ls
+                    ON ls.less_sweet_id = b.less_sweet_id
+                LEFT JOIN baker_location bl
+                    ON bl.baker_id = b.baker_id
+                LEFT JOIN location l
+                    ON l.location_id = bl.location_id
+                LEFT JOIN baker_specialty bs
+                    ON bs.baker_id = b.baker_id
+                LEFT JOIN specialty s
+                    ON s.specialty_id = bs.specialty_id
+                LEFT JOIN contact c
+                    ON c.baker_id = b.baker_id
+                GROUP BY
+                    b.baker_id,
+                    b.name,
+                    b.description,
+                    b.image_url,
+                    fm.name,
+                    hs.name,
+                    ls.name,
+                    b.created_at,
+                    {is_advertising_sql}
+                ORDER BY {is_advertising_sql} DESC, b.created_at DESC, b.baker_id DESC
+                """
+            )
+            rows = cursor.fetchall()
+        return [serialize_baker_row(row) for row in rows]
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/bakers/{baker_id}/menu-items")
+def get_baker_menu_items(baker_id: int, status: Optional[str] = None):
+    if status and status not in {"live", "draft"}:
+        raise HTTPException(status_code=400, detail="Invalid status filter")
+    try:
+        with get_db_cursor() as cursor:
+            ensure_menu_item_table(cursor)
+            if status:
+                cursor.execute(
+                    """
+                    SELECT
+                        item_id,
+                        baker_id,
+                        name,
+                        category,
+                        description,
+                        price,
+                        lead_time,
+                        serves,
+                        dietary,
+                        custom_orders,
+                        status,
+                        image_url,
+                        created_at,
+                        updated_at
+                    FROM menu_item
+                    WHERE baker_id = %s AND status = %s
+                    ORDER BY created_at DESC, item_id DESC
+                    """,
+                    (baker_id, status),
+                )
+            else:
+                cursor.execute(
+                    """
+                    SELECT
+                        item_id,
+                        baker_id,
+                        name,
+                        category,
+                        description,
+                        price,
+                        lead_time,
+                        serves,
+                        dietary,
+                        custom_orders,
+                        status,
+                        image_url,
+                        created_at,
+                        updated_at
+                    FROM menu_item
+                    WHERE baker_id = %s
+                    ORDER BY created_at DESC, item_id DESC
+                    """,
+                    (baker_id,),
+                )
+            rows = cursor.fetchall()
+        return [serialize_menu_item_row(row) for row in rows]
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/menu-items")
+def create_menu_item(item: MenuItemPayload):
+    if item.status not in {"live", "draft"}:
+        raise HTTPException(status_code=400, detail="Invalid item status")
+    try:
+        with get_db_cursor(commit=True) as cursor:
+            ensure_menu_item_table(cursor)
+            cursor.execute("SELECT 1 FROM baker WHERE baker_id = %s", (item.baker_id,))
+            if not cursor.fetchone():
+                raise HTTPException(status_code=404, detail="Baker not found")
+            cursor.execute(
+                """
+                INSERT INTO menu_item (
+                    baker_id,
+                    name,
+                    category,
+                    description,
+                    price,
+                    lead_time,
+                    serves,
+                    dietary,
+                    custom_orders,
+                    status,
+                    image_url
+                )
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                RETURNING
+                    item_id,
+                    baker_id,
+                    name,
+                    category,
+                    description,
+                    price,
+                    lead_time,
+                    serves,
+                    dietary,
+                    custom_orders,
+                    status,
+                    image_url,
+                    created_at,
+                    updated_at
+                """,
+                (
+                    item.baker_id,
+                    item.name.strip(),
+                    item.category.strip() or "occasion-cake",
+                    item.description.strip(),
+                    item.price,
+                    item.lead_time.strip(),
+                    item.serves.strip(),
+                    [value.strip() for value in item.dietary if value and value.strip()],
+                    item.custom_orders,
+                    item.status,
+                    item.image_url.strip() or None,
+                ),
+            )
+            row = cursor.fetchone()
+        return serialize_menu_item_row(row)
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.put("/menu-items/{item_id}")
+def update_menu_item(item_id: int, item: MenuItemPayload):
+    if item.status not in {"live", "draft"}:
+        raise HTTPException(status_code=400, detail="Invalid item status")
+    try:
+        with get_db_cursor(commit=True) as cursor:
+            ensure_menu_item_table(cursor)
+            cursor.execute(
+                """
+                UPDATE menu_item
+                SET
+                    name = %s,
+                    category = %s,
+                    description = %s,
+                    price = %s,
+                    lead_time = %s,
+                    serves = %s,
+                    dietary = %s,
+                    custom_orders = %s,
+                    status = %s,
+                    image_url = %s,
+                    updated_at = now()
+                WHERE item_id = %s AND baker_id = %s
+                RETURNING
+                    item_id,
+                    baker_id,
+                    name,
+                    category,
+                    description,
+                    price,
+                    lead_time,
+                    serves,
+                    dietary,
+                    custom_orders,
+                    status,
+                    image_url,
+                    created_at,
+                    updated_at
+                """,
+                (
+                    item.name.strip(),
+                    item.category.strip() or "occasion-cake",
+                    item.description.strip(),
+                    item.price,
+                    item.lead_time.strip(),
+                    item.serves.strip(),
+                    [value.strip() for value in item.dietary if value and value.strip()],
+                    item.custom_orders,
+                    item.status,
+                    item.image_url.strip() or None,
+                    item_id,
+                    item.baker_id,
+                ),
+            )
+            row = cursor.fetchone()
+        if not row:
+            raise HTTPException(status_code=404, detail="Menu item not found")
+        return serialize_menu_item_row(row)
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.delete("/menu-items/{item_id}")
+def delete_menu_item(item_id: int, baker_id: int):
+    try:
+        with get_db_cursor(commit=True) as cursor:
+            ensure_menu_item_table(cursor)
+            cursor.execute(
+                """
+                DELETE FROM menu_item
+                WHERE item_id = %s AND baker_id = %s
+                RETURNING item_id
+                """,
+                (item_id, baker_id),
+            )
+            row = cursor.fetchone()
+        if not row:
+            raise HTTPException(status_code=404, detail="Menu item not found")
+        return {"deleted": True, "item_id": row[0]}
     except HTTPException:
         raise
     except Exception as e:
@@ -685,6 +1042,7 @@ class UserResetPassword(BaseModel):
 
 class UserForgotPassword(BaseModel):
     email: str
+
 
 @app.post("/signup")
 async def signup(user: UserSignup):

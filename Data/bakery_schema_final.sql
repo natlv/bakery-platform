@@ -21,9 +21,11 @@ CREATE TABLE baker (
   name TEXT NOT NULL UNIQUE,
   description TEXT,
   image_url TEXT,
+  halal_certificate_url TEXT,
   fulfillment_method_id BIGINT REFERENCES fulfillment_method(fulfillment_method_id),
   halal_status_id BIGINT REFERENCES halal_status(halal_status_id),
   less_sweet_id BIGINT REFERENCES less_sweet(less_sweet_id),
+  is_advertising BOOLEAN NOT NULL DEFAULT FALSE,
   created_at TIMESTAMPTZ DEFAULT now()
 );
 
@@ -62,4 +64,21 @@ CREATE TABLE source_listing (
   csv_row_number INT,
   source_index INT,
   raw_title TEXT
+);
+
+CREATE TABLE menu_item (
+  item_id BIGSERIAL PRIMARY KEY,
+  baker_id BIGINT NOT NULL REFERENCES baker(baker_id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  category TEXT NOT NULL,
+  description TEXT,
+  price NUMERIC(10, 2) NOT NULL CHECK (price > 0),
+  lead_time TEXT,
+  serves TEXT,
+  dietary TEXT[] NOT NULL DEFAULT ARRAY[]::text[],
+  custom_orders BOOLEAN NOT NULL DEFAULT FALSE,
+  status TEXT NOT NULL DEFAULT 'draft' CHECK (status IN ('live', 'draft')),
+  image_url TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
