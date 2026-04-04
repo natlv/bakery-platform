@@ -36,7 +36,7 @@
       method: "POST",
       body: formData,
     });
-    return result?.url || currentImageUrl;
+    return result?.filename || currentImageUrl;
   }
 
   function collectPayload(imageUrl) {

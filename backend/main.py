@@ -57,6 +57,17 @@ def serialize_request_row(row):
     }
 
 
+def resolve_image_reference(value):
+    if not value:
+        return None
+    raw = str(value).strip()
+    if raw.startswith("http://") or raw.startswith("https://"):
+        parsed = urlparse(raw)
+        filename = unquote(parsed.path.rsplit("/", 1)[-1]).strip()
+        return bucket.find_image(filename) if filename else raw
+    return bucket.find_image(raw)
+
+
 def serialize_bid_row(row):
     return {
         "bid_id": row[0],
@@ -74,8 +85,8 @@ def serialize_baker_row(row):
         "baker_id": row[0],
         "name": row[1],
         "description": row[2] or "",
-        "image_url": bucket.find_image(row[3]) if row[3] else None,
-        "halal_certificate_url": bucket.find_image(row[4]) if row[4] else None,
+        "image_url": resolve_image_reference(row[3]),
+        "halal_certificate_url": resolve_image_reference(row[4]),
         "fulfillment_method": row[5] or "",
         "halal_status": row[6] or "",
         "less_sweet": row[7] or "",
@@ -100,7 +111,7 @@ def serialize_menu_item_row(row):
         "dietary": row[8] or [],
         "custom_orders": bool(row[9]),
         "status": row[10] or "draft",
-        "image_url": bucket.find_image(row[11]) if row[11] else None,
+        "image_url": resolve_image_reference(row[11]),
         "created_at": row[12].isoformat() if hasattr(row[12], "isoformat") else row[12],
         "updated_at": row[13].isoformat() if hasattr(row[13], "isoformat") else row[13],
     }
