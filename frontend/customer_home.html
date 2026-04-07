@@ -589,7 +589,7 @@ Only include bakeries with score >= 0.3. Sort by score descending. Max 6 results
     aiResults = BAKERIES.filter(b => b.aiScore > 0).map(b => ({ id: b.id, score: b.aiScore }));
     bannerTitle.textContent = aiResults.length ? `${aiResults.length} keyword match${aiResults.length !== 1 ? 'es' : ''}` : 'No strong matches';
     bannerBody.textContent = aiResults.length
-      ? 'Results ranked by keyword relevance.'
+      ? 'The most relevant results for you are displayed first below.'
       : `No strong matches for "${query}". Try broader terms or post a custom request below.`;
   }
 
