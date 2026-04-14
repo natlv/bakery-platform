@@ -687,14 +687,6 @@ def get_bakers(
         "halal": """
             (
                 LOWER(COALESCE(hs.name, '')) = 'yes'
-                OR EXISTS (
-                    SELECT 1
-                    FROM baker_specialty bs2
-                    JOIN specialty s2 ON s2.specialty_id = bs2.specialty_id
-                    WHERE bs2.baker_id = b.baker_id
-                      AND LOWER(s2.name) ~ '(halal|muslim)'
-                )
-                OR LOWER(COALESCE(b.description, '')) ~ '(halal|muslim)'
             )
         """,
         "vegan": """

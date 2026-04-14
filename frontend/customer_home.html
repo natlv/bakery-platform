@@ -338,7 +338,7 @@ function inferCategories(baker) {
   if (/(bread|sourdough|loaf|focaccia|brioche)/.test(hay)) cats.add('bread');
   if (/(pastry|croissant|danish|tart|puff|entremet)/.test(hay)) cats.add('pastry');
   if (/(cookie|cookies|biscuit|biscuits|shortbread)/.test(hay)) cats.add('cookies');
-  if (/(halal|muslim)/.test(hay)) cats.add('halal');
+  if (hasHalalStatus(baker.halalStatus)) cats.add('halal');
   if (/(vegan|plant-based|plant based|dairy-free|dairy free|egg-free|egg free)/.test(hay)) cats.add('vegan');
   return Array.from(cats);
 }
