@@ -35,3 +35,9 @@ SEALION_API_KEY=your_sealion_api_key
 ```
 
 The backend also looks for Google Cloud credentials through `GOOGLE_APPLICATION_CREDENTIALS` or `KEY_PATH` if image uploads are enabled.
+
+## AI Declaration
+
+Portions of this repository were created or refined with the assistance of AI-generated code.
+
+All AI-assisted changes were reviewed and tested by the repository authors, and were confirmed to work in the intended project context at the time they were added.
